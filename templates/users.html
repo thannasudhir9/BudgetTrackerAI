@@ -1,0 +1,270 @@
+{% extends "base.html" %}
+
+{% block title %}User Management - Budget Tracker{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <div class="card border-0 shadow-sm">
+        <div class="card-body">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h5 class="card-title mb-0">
+                    <i class="bi bi-people"></i> User Management
+                </h5>
+                <div>
+                    <form action="{{ url_for('upgrade_existing_users') }}" method="POST" class="d-inline">
+                        <button type="submit" class="btn btn-warning me-2" onclick="return confirm('Are you sure you want to upgrade all existing users?')">
+                            <i class="bi bi-arrow-up-circle"></i> Upgrade Existing Users
+                        </button>
+                    </form>
+                    <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addUserModal">
+                        <i class="bi bi-person-plus"></i> Add User
+                    </button>
+                </div>
+            </div>
+
+            <!-- Users Table -->
+            <div class="table-responsive">
+                <table class="table table-hover">
+                    <thead>
+                        <tr>
+                            <th>Username</th>
+                            <th>Email</th>
+                            <th>Role</th>
+                            <th>Status</th>
+                            <th>Last Login</th>
+                            <th>Created</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for user in users %}
+                        <tr>
+                            <td>
+                                {{ user.username }}
+                                {% if user.id == current_user.id %}
+                                <span class="badge bg-info ms-1">You</span>
+                                {% endif %}
+                            </td>
+                            <td>{{ user.email }}</td>
+                            <td>
+                                <span class="badge {% if user.role.value == 'super_admin' %}bg-danger{% elif user.role.value == 'admin' %}bg-warning{% elif user.role.value == 'pro' %}bg-success{% else %}bg-secondary{% endif %}">
+                                    {{ user.role.value|title }}
+                                </span>
+                            </td>
+                            <td>
+                                {% if user.is_active %}
+                                <span class="badge bg-success">Active</span>
+                                {% else %}
+                                <span class="badge bg-danger">Inactive</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% if user.last_login %}
+                                <small>{{ user.last_login.strftime('%Y-%m-%d %H:%M') }}</small>
+                                {% else %}
+                                <small class="text-muted">Never</small>
+                                {% endif %}
+                            </td>
+                            <td>
+                                <small>{{ user.created_at.strftime('%Y-%m-%d') }}</small>
+                            </td>
+                            <td>
+                                <div class="btn-group">
+                                    <button class="btn btn-sm btn-outline-primary" onclick="editUser('{{ user.id }}')" {% if not current_user.is_super_admin and user.role.value in ['admin', 'super_admin'] %}disabled{% endif %}>
+                                        <i class="bi bi-pencil"></i>
+                                    </button>
+                                    <button class="btn btn-sm {% if user.is_active %}btn-outline-danger{% else %}btn-outline-success{% endif %}" 
+                                            onclick="toggleUserStatus('{{ user.id }}', '{{ user.is_active|lower }}')"
+                                            {% if not current_user.is_super_admin and user.role.value in ['admin', 'super_admin'] %}disabled{% endif %}
+                                            {% if user.id == current_user.id %}disabled{% endif %}>
+                                        <i class="bi {% if user.is_active %}bi-person-x{% else %}bi-person-check{% endif %}"></i>
+                                    </button>
+                                </div>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Edit User Modal -->
+<div class="modal fade" id="editUserModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Edit User</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <form id="editUserForm">
+                    <input type="hidden" id="editUserId" name="id">
+                    <div class="mb-3">
+                        <label for="editUsername" class="form-label">Username</label>
+                        <input type="text" class="form-control" id="editUsername" name="username" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="editEmail" class="form-label">Email</label>
+                        <input type="email" class="form-control" id="editEmail" name="email" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="editRole" class="form-label">Role</label>
+                        <select class="form-select" id="editRole" name="role" required>
+                            <option value="normal">Normal</option>
+                            <option value="pro">Pro</option>
+                            {% if current_user.is_super_admin %}
+                            <option value="admin">Admin</option>
+                            <option value="super_admin">Super Admin</option>
+                            {% endif %}
+                        </select>
+                    </div>
+                    <div class="form-check mb-3">
+                        <input class="form-check-input" type="checkbox" id="editIsActive" name="is_active">
+                        <label class="form-check-label" for="editIsActive">
+                            Active
+                        </label>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-primary" onclick="handleEditUserSubmit()">Save Changes</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Add User Modal -->
+<div class="modal fade" id="addUserModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Add New User</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <form id="addUserForm">
+                    <div class="mb-3">
+                        <label for="username" class="form-label">Username</label>
+                        <input type="text" class="form-control" id="username" name="username" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="email" class="form-label">Email</label>
+                        <input type="email" class="form-control" id="email" name="email" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="password" class="form-label">Password</label>
+                        <input type="password" class="form-control" id="password" name="password" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="role" class="form-label">Role</label>
+                        <select class="form-select" id="role" name="role" required>
+                            <option value="normal">Normal</option>
+                            <option value="pro">Pro</option>
+                            {% if current_user.is_super_admin %}
+                            <option value="admin">Admin</option>
+                            <option value="super_admin">Super Admin</option>
+                            {% endif %}
+                        </select>
+                    </div>
+                    <div class="form-check mb-3">
+                        <input class="form-check-input" type="checkbox" id="isActive" name="is_active" checked>
+                        <label class="form-check-label" for="isActive">
+                            Active
+                        </label>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-primary" onclick="handleAddUserSubmit()">Add User</button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+// User Management JavaScript
+function editUser(userId) {
+    // Fetch user data and populate the edit modal
+    fetch(`/api/users/${userId}`)
+        .then(response => response.json())
+        .then(data => {
+            document.getElementById('editUserId').value = data.id;
+            document.getElementById('editUsername').value = data.username;
+            document.getElementById('editEmail').value = data.email;
+            document.getElementById('editRole').value = data.role;
+            document.getElementById('editIsActive').checked = data.is_active;
+            new bootstrap.Modal(document.getElementById('editUserModal')).show();
+        });
+}
+
+function toggleUserStatus(userId, currentStatus) {
+    const newStatus = currentStatus === 'true' ? false : true;
+    fetch(`/api/users/${userId}/toggle-status`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ is_active: newStatus })
+    })
+    .then(response => {
+        if (response.ok) {
+            window.location.reload();
+        }
+    });
+}
+
+function handleEditUserSubmit() {
+    const form = document.getElementById('editUserForm');
+    const formData = new FormData(form);
+    const userId = formData.get('id');
+
+    fetch(`/api/users/${userId}`, {
+        method: 'PUT',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+            username: formData.get('username'),
+            email: formData.get('email'),
+            role: formData.get('role'),
+            is_active: formData.get('is_active') === 'on'
+        })
+    })
+    .then(response => {
+        if (response.ok) {
+            window.location.reload();
+        }
+    });
+}
+
+function handleAddUserSubmit() {
+    const form = document.getElementById('addUserForm');
+    const formData = new FormData(form);
+
+    fetch('/api/users', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+            username: formData.get('username'),
+            email: formData.get('email'),
+            password: formData.get('password'),
+            role: formData.get('role'),
+            is_active: formData.get('is_active') === 'on'
+        })
+    })
+    .then(response => {
+        if (response.ok) {
+            window.location.reload();
+        }
+    });
+}
+</script>
+{% endblock %}

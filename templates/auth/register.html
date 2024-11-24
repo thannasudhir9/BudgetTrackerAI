@@ -1,0 +1,211 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Register - Budget Tracker</title>
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Bootstrap Icons -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.7.2/font/bootstrap-icons.css">
+    <style>
+        body {
+            background-color: #f8f9fa;
+        }
+        .register-container {
+            max-width: 500px;
+            margin: 50px auto;
+        }
+        .brand-logo {
+            text-align: center;
+            margin-bottom: 2rem;
+        }
+        .brand-logo i {
+            font-size: 3rem;
+            color: #0d6efd;
+        }
+        .password-requirements {
+            font-size: 0.8rem;
+        }
+        .requirement-item {
+            color: #6c757d;
+        }
+        .requirement-item.valid {
+            color: #198754;
+        }
+        .requirement-item i {
+            width: 16px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="register-container">
+            <div class="brand-logo">
+                <i class="bi bi-wallet2"></i>
+                <h4 class="mt-2">Budget Tracker</h4>
+            </div>
+            
+            <div class="card border-0 shadow-sm">
+                <div class="card-body p-4">
+                    <h5 class="card-title text-center mb-4">Create Account</h5>
+                    
+                    <!-- Flash Messages -->
+                    {% with messages = get_flashed_messages(with_categories=true) %}
+                        {% if messages %}
+                            {% for category, message in messages %}
+                                <div class="alert alert-{{ category }} alert-dismissible fade show" role="alert">
+                                    {{ message }}
+                                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                                </div>
+                            {% endfor %}
+                        {% endif %}
+                    {% endwith %}
+
+                    <form method="POST" action="{{ url_for('register') }}" id="registerForm">
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label for="username" class="form-label">Username</label>
+                                <div class="input-group">
+                                    <span class="input-group-text"><i class="bi bi-person"></i></span>
+                                    <input type="text" class="form-control" id="username" name="username" required>
+                                </div>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label for="email" class="form-label">Email address</label>
+                                <div class="input-group">
+                                    <span class="input-group-text"><i class="bi bi-envelope"></i></span>
+                                    <input type="email" class="form-control" id="email" name="email" required>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label for="password" class="form-label">Password</label>
+                                <div class="input-group">
+                                    <span class="input-group-text"><i class="bi bi-lock"></i></span>
+                                    <input type="password" class="form-control" id="password" name="password" required>
+                                </div>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label for="confirm_password" class="form-label">Confirm Password</label>
+                                <div class="input-group">
+                                    <span class="input-group-text"><i class="bi bi-lock"></i></span>
+                                    <input type="password" class="form-control" id="confirm_password" name="confirm_password" required>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Password Requirements -->
+                        <div class="mb-4">
+                            <p class="mb-2 text-muted">Password Requirements:</p>
+                            <div class="password-requirements">
+                                <p class="requirement-item mb-1" id="length-check">
+                                    <i class="bi bi-x-circle"></i> At least 8 characters
+                                </p>
+                                <p class="requirement-item mb-1" id="uppercase-check">
+                                    <i class="bi bi-x-circle"></i> At least one uppercase letter
+                                </p>
+                                <p class="requirement-item mb-1" id="lowercase-check">
+                                    <i class="bi bi-x-circle"></i> At least one lowercase letter
+                                </p>
+                                <p class="requirement-item mb-1" id="number-check">
+                                    <i class="bi bi-x-circle"></i> At least one number
+                                </p>
+                                <p class="requirement-item mb-1" id="special-check">
+                                    <i class="bi bi-x-circle"></i> At least one special character
+                                </p>
+                                <p class="requirement-item" id="match-check">
+                                    <i class="bi bi-x-circle"></i> Passwords match
+                                </p>
+                            </div>
+                        </div>
+
+                        <div class="mb-3 form-check">
+                            <input type="checkbox" class="form-check-input" id="terms" name="terms" required>
+                            <label class="form-check-label" for="terms">
+                                I agree to the <a href="#" class="text-decoration-none">Terms of Service</a> and <a href="#" class="text-decoration-none">Privacy Policy</a>
+                            </label>
+                        </div>
+
+                        <button type="submit" class="btn btn-primary w-100 mb-3" id="submitBtn" disabled>Create Account</button>
+                    </form>
+                </div>
+            </div>
+            
+            <div class="text-center mt-3">
+                <p>Already have an account? <a href="{{ url_for('login') }}" class="text-decoration-none">Sign in</a></p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Bootstrap Bundle with Popper -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    
+    <!-- Password Validation Script -->
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const password = document.getElementById('password');
+            const confirmPassword = document.getElementById('confirm_password');
+            const submitBtn = document.getElementById('submitBtn');
+            const terms = document.getElementById('terms');
+
+            function validatePassword() {
+                const pwd = password.value;
+                const confirmPwd = confirmPassword.value;
+
+                // Length check
+                document.getElementById('length-check').className = 
+                    pwd.length >= 8 ? 'requirement-item valid' : 'requirement-item';
+                document.getElementById('length-check').querySelector('i').className = 
+                    pwd.length >= 8 ? 'bi bi-check-circle' : 'bi bi-x-circle';
+
+                // Uppercase check
+                const hasUpperCase = /[A-Z]/.test(pwd);
+                document.getElementById('uppercase-check').className = 
+                    hasUpperCase ? 'requirement-item valid' : 'requirement-item';
+                document.getElementById('uppercase-check').querySelector('i').className = 
+                    hasUpperCase ? 'bi bi-check-circle' : 'bi bi-x-circle';
+
+                // Lowercase check
+                const hasLowerCase = /[a-z]/.test(pwd);
+                document.getElementById('lowercase-check').className = 
+                    hasLowerCase ? 'requirement-item valid' : 'requirement-item';
+                document.getElementById('lowercase-check').querySelector('i').className = 
+                    hasLowerCase ? 'bi bi-check-circle' : 'bi bi-x-circle';
+
+                // Number check
+                const hasNumber = /\d/.test(pwd);
+                document.getElementById('number-check').className = 
+                    hasNumber ? 'requirement-item valid' : 'requirement-item';
+                document.getElementById('number-check').querySelector('i').className = 
+                    hasNumber ? 'bi bi-check-circle' : 'bi bi-x-circle';
+
+                // Special character check
+                const hasSpecial = /[!@#$%^&*(),.?":{}|<>]/.test(pwd);
+                document.getElementById('special-check').className = 
+                    hasSpecial ? 'requirement-item valid' : 'requirement-item';
+                document.getElementById('special-check').querySelector('i').className = 
+                    hasSpecial ? 'bi bi-check-circle' : 'bi bi-x-circle';
+
+                // Match check
+                const passwordsMatch = pwd === confirmPwd && pwd !== '';
+                document.getElementById('match-check').className = 
+                    passwordsMatch ? 'requirement-item valid' : 'requirement-item';
+                document.getElementById('match-check').querySelector('i').className = 
+                    passwordsMatch ? 'bi bi-check-circle' : 'bi bi-x-circle';
+
+                // Enable submit button if all requirements are met
+                const isValid = pwd.length >= 8 && hasUpperCase && hasLowerCase && 
+                              hasNumber && hasSpecial && passwordsMatch && terms.checked;
+                submitBtn.disabled = !isValid;
+            }
+
+            password.addEventListener('input', validatePassword);
+            confirmPassword.addEventListener('input', validatePassword);
+            terms.addEventListener('change', validatePassword);
+        });
+    </script>
+</body>
+</html>

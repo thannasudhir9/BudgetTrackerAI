@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>About - Budget Tracker</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.7.2/font/bootstrap-icons.css">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body class="bg-light">
+    <!-- Navigation -->
+    <nav class="navbar navbar-expand-lg navbar-dark bg-primary">
+        <div class="container">
+            <a class="navbar-brand" href="{{ url_for('home') }}">Budget Tracker</a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav me-auto">
+                    <li class="nav-item">
+                        <a class="nav-link" href="{{ url_for('home') }}">Home</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="{{ url_for('pricing') }}">Pricing</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link active" href="{{ url_for('about') }}">About</a>
+                    </li>
+                </ul>
+                <ul class="navbar-nav">
+                    {% if current_user.is_authenticated %}
+                    <li class="nav-item">
+                        <a class="nav-link" href="{{ url_for('dashboard') }}">Dashboard</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="{{ url_for('logout') }}">Logout</a>
+                    </li>
+                    {% else %}
+                    <li class="nav-item">
+                        <a class="nav-link" href="{{ url_for('login') }}">Login</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="{{ url_for('register') }}">Register</a>
+                    </li>
+                    {% endif %}
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <!-- About Section -->
+    <div class="container py-5">
+        <div class="row justify-content-center">
+            <div class="col-lg-8 text-center">
+                <h1 class="display-4 fw-bold mb-4">About Budget Tracker</h1>
+                <p class="lead text-muted mb-5">Your Personal Finance Companion</p>
+            </div>
+        </div>
+
+        <!-- Mission Section -->
+        <div class="row mb-5">
+            <div class="col-md-6">
+                <h2 class="h3 mb-4">Our Mission</h2>
+                <p class="text-muted">At Budget Tracker, we believe that financial freedom starts with understanding your money. Our mission is to provide simple yet powerful tools that help you take control of your finances and make informed decisions about your future.</p>
+            </div>
+            <div class="col-md-6">
+                <h2 class="h3 mb-4">Why Choose Us?</h2>
+                <ul class="list-unstyled">
+                    <li class="mb-3"><i class="bi bi-check-circle-fill text-success me-2"></i>Easy to use interface</li>
+                    <li class="mb-3"><i class="bi bi-check-circle-fill text-success me-2"></i>Secure and private</li>
+                    <li class="mb-3"><i class="bi bi-check-circle-fill text-success me-2"></i>Comprehensive reporting</li>
+                    <li class="mb-3"><i class="bi bi-check-circle-fill text-success me-2"></i>Mobile friendly</li>
+                </ul>
+            </div>
+        </div>
+
+        <!-- Features Section -->
+        <div class="row g-4 mb-5">
+            <div class="col-md-4">
+                <div class="card border-0 shadow-sm h-100">
+                    <div class="card-body text-center p-4">
+                        <div class="mb-4">
+                            <i class="bi bi-graph-up text-primary display-4"></i>
+                        </div>
+                        <h3 class="h4 mb-3">Track Expenses</h3>
+                        <p class="text-muted mb-0">Monitor your spending patterns and identify areas where you can save money.</p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="card border-0 shadow-sm h-100">
+                    <div class="card-body text-center p-4">
+                        <div class="mb-4">
+                            <i class="bi bi-pie-chart text-primary display-4"></i>
+                        </div>
+                        <h3 class="h4 mb-3">Budget Planning</h3>
+                        <p class="text-muted mb-0">Set budgets for different categories and stay on track with your financial goals.</p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="card border-0 shadow-sm h-100">
+                    <div class="card-body text-center p-4">
+                        <div class="mb-4">
+                            <i class="bi bi-shield-check text-primary display-4"></i>
+                        </div>
+                        <h3 class="h4 mb-3">Secure & Private</h3>
+                        <p class="text-muted mb-0">Your financial data is encrypted and protected with industry-standard security measures.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Team Section -->
+        <div class="text-center mb-5">
+            <h2 class="mb-4">Our Team</h2>
+            <p class="text-muted mb-5">Meet the people behind Budget Tracker</p>
+            <div class="row g-4 justify-content-center">
+                <div class="col-md-4">
+                    <div class="card border-0 shadow-sm">
+                        <div class="card-body p-4">
+                            <img src="https://via.placeholder.com/150" alt="Team Member" class="rounded-circle mb-3" width="100">
+                            <h3 class="h5 mb-1">John Doe</h3>
+                            <p class="text-muted small mb-3">Founder & CEO</p>
+                            <p class="text-muted mb-0">10+ years of experience in fintech</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="card border-0 shadow-sm">
+                        <div class="card-body p-4">
+                            <img src="https://via.placeholder.com/150" alt="Team Member" class="rounded-circle mb-3" width="100">
+                            <h3 class="h5 mb-1">Jane Smith</h3>
+                            <p class="text-muted small mb-3">Lead Developer</p>
+                            <p class="text-muted mb-0">Expert in secure financial applications</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Contact Section -->
+        <div class="row justify-content-center">
+            <div class="col-lg-8 text-center">
+                <h2 class="mb-4">Get in Touch</h2>
+                <p class="text-muted mb-5">Have questions? We'd love to hear from you.</p>
+                <div class="d-flex justify-content-center gap-4">
+                    <a href="mailto:support@budgettracker.com" class="text-decoration-none">
+                        <i class="bi bi-envelope text-primary me-2"></i>
+                        support@budgettracker.com
+                    </a>
+                    <a href="tel:+1234567890" class="text-decoration-none">
+                        <i class="bi bi-telephone text-primary me-2"></i>
+                        (123) 456-7890
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>
