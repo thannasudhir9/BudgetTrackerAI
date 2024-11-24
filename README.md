@@ -139,3 +139,14 @@ The application uses a simple but effective architecture:
 ## Contributing
 
 Feel free to fork this project and make improvements. Pull requests are welcome!
+
+
+The repository includes all the files we created:
+
+app.py - Flask application
+requirements.txt - Python dependencies
+README.md - Project documentation
+static/css/style.css - Custom styling
+static/js/main.js - Frontend JavaScript
+templates/index.html - Main HTML template
+.gitignore - Git ignore rules
