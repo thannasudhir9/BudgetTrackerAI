@@ -3,126 +3,95 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{% block title %}Budget Tracker{% endblock %}</title>
-    <!-- Bootstrap CSS -->
+    <title>Budget Tracker - {% block title %}{% endblock %}</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-    <!-- Bootstrap Icons -->
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.7.2/font/bootstrap-icons.css">
-    <!-- Custom CSS -->
     <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
-    {% block styles %}{% endblock %}
+    {% block extra_css %}{% endblock %}
 </head>
 <body>
     <!-- Navigation -->
     <nav class="navbar navbar-expand-lg navbar-dark bg-primary">
         <div class="container">
-            <a class="navbar-brand" href="{{ url_for('dashboard') }}">Budget Tracker</a>
+            <a class="navbar-brand" href="{{ url_for('home') }}">Budget Tracker</a>
             <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
                 <span class="navbar-toggler-icon"></span>
             </button>
             <div class="collapse navbar-collapse" id="navbarNav">
                 <ul class="navbar-nav me-auto">
                     <li class="nav-item">
-                        <a class="nav-link {% if request.endpoint == 'dashboard' %}active{% endif %}" href="{{ url_for('dashboard') }}">
-                            <i class="bi bi-speedometer2"></i> Dashboard
-                        </a>
+                        <a class="nav-link {% if request.endpoint == 'home' %}active{% endif %}" href="{{ url_for('home') }}">Home</a>
                     </li>
                     <li class="nav-item">
-                        <a class="nav-link {% if request.endpoint == 'transactions' %}active{% endif %}" href="{{ url_for('view_transactions') }}">
-                            <i class="bi bi-receipt"></i> Transactions
-                        </a>
-                    </li>
-                    {% if current_user.is_pro %}
-                    <li class="nav-item">
-                        <a class="nav-link {% if request.endpoint == 'reports' %}active{% endif %}" href="{{ url_for('dashboard') }}">
-                            <i class="bi bi-graph-up"></i> Reports
-                        </a>
+                        <a class="nav-link {% if request.endpoint == 'pricing' %}active{% endif %}" href="{{ url_for('pricing') }}">Pricing</a>
                     </li>
                     <li class="nav-item">
-                        <a class="nav-link {% if request.endpoint == 'analytics' %}active{% endif %}" href="{{ url_for('dashboard') }}">
-                            <i class="bi bi-bar-chart"></i> Analytics
-                        </a>
+                        <a class="nav-link {% if request.endpoint == 'about' %}active{% endif %}" href="{{ url_for('about') }}">About</a>
                     </li>
-                    {% endif %}
-                    {% if current_user.is_admin %}
-                    <li class="nav-item">
-                        <a class="nav-link {% if request.endpoint == 'users' %}active{% endif %}" href="{{ url_for('dashboard') }}">
-                            <i class="bi bi-people"></i> Users
-                        </a>
-                    </li>
-                    {% endif %}
-                    {% if current_user.is_super_admin %}
-                    <li class="nav-item">
-                        <a class="nav-link {% if request.endpoint == 'settings' %}active{% endif %}" href="{{ url_for('dashboard') }}">
-                            <i class="bi bi-gear"></i> System Settings
-                        </a>
-                    </li>
-                    {% endif %}
                 </ul>
-                {% if current_user.is_authenticated %}
                 <ul class="navbar-nav">
-                    {% if not current_user.is_pro %}
-                    <li class="nav-item me-2">
-                        <a href="#" class="nav-link btn btn-warning btn-sm text-dark">
-                            <i class="bi bi-star-fill"></i> Upgrade to Pro
-                        </a>
+                    {% if current_user.is_authenticated %}
+                    <li class="nav-item">
+                        <a class="nav-link {% if request.endpoint == 'dashboard' %}active{% endif %}" href="{{ url_for('dashboard') }}">Dashboard</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link {% if request.endpoint == 'view_transactions' %}active{% endif %}" href="{{ url_for('view_transactions') }}">Transactions</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="{{ url_for('logout') }}">Logout</a>
+                    </li>
+                    {% else %}
+                    <li class="nav-item">
+                        <a class="nav-link {% if request.endpoint == 'login' %}active{% endif %}" href="{{ url_for('login') }}">Login</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link {% if request.endpoint == 'register' %}active{% endif %}" href="{{ url_for('register') }}">Register</a>
                     </li>
                     {% endif %}
-                    <li class="nav-item dropdown">
-                        <a class="nav-link dropdown-toggle" href="#" id="navbarDropdown" role="button" data-bs-toggle="dropdown">
-                            <i class="bi bi-person-circle"></i> 
-                            {{ current_user.username }}
-                            {% if current_user.role.value != 'normal' %}
-                            <span class="badge bg-light text-dark ms-1">{{ current_user.role.value|title }}</span>
-                            {% endif %}
-                        </a>
-                        <ul class="dropdown-menu dropdown-menu-end">
-                            <li>
-                                <span class="dropdown-item-text text-muted">
-                                    <small>Role: {{ current_user.role.value|title }}</small>
-                                </span>
-                            </li>
-                            <li><hr class="dropdown-divider"></li>
-                            <li><a class="dropdown-item" href="#"><i class="bi bi-person"></i> Profile</a></li>
-                            {% if current_user.is_pro %}
-                            <li><a class="dropdown-item" href="#"><i class="bi bi-gear"></i> Preferences</a></li>
-                            {% endif %}
-                            {% if current_user.is_admin %}
-                            <li><a class="dropdown-item" href="#"><i class="bi bi-shield-check"></i> Admin Panel</a></li>
-                            {% endif %}
-                            <li><hr class="dropdown-divider"></li>
-                            <li><a class="dropdown-item text-danger" href="{{ url_for('logout') }}"><i class="bi bi-box-arrow-right"></i> Logout</a></li>
-                        </ul>
-                    </li>
                 </ul>
-                {% endif %}
             </div>
         </div>
     </nav>
 
-    <!-- Flash Messages -->
-    {% with messages = get_flashed_messages(with_categories=true) %}
-        {% if messages %}
-            {% for category, message in messages %}
-                <div class="alert alert-{{ category }} alert-dismissible fade show m-3" role="alert">
-                    {{ message }}
-                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+    {% block content %}{% endblock %}
+
+    <!-- Footer -->
+    <footer class="bg-dark text-light py-4 mt-auto">
+        <div class="container">
+            <div class="row">
+                <div class="col-md-4">
+                    <h5>Budget Tracker</h5>
+                    <p>Take control of your finances with our easy-to-use budget tracking tool.</p>
                 </div>
-            {% endfor %}
-        {% endif %}
-    {% endwith %}
+                <div class="col-md-4">
+                    <h5>Quick Links</h5>
+                    <ul class="list-unstyled">
+                        <li><a href="{{ url_for('home') }}" class="text-light">Home</a></li>
+                        <li><a href="{{ url_for('pricing') }}" class="text-light">Pricing</a></li>
+                        <li><a href="{{ url_for('about') }}" class="text-light">About</a></li>
+                        {% if current_user.is_authenticated %}
+                        <li><a href="{{ url_for('dashboard') }}" class="text-light">Dashboard</a></li>
+                        <li><a href="{{ url_for('view_transactions') }}" class="text-light">Transactions</a></li>
+                        {% endif %}
+                    </ul>
+                </div>
+                <div class="col-md-4">
+                    <h5>Contact</h5>
+                    <ul class="list-unstyled">
+                        <li><i class="bi bi-envelope me-2"></i>support@budgettracker.com</li>
+                        <li><i class="bi bi-telephone me-2"></i>+1 (555) 123-4567</li>
+                        <li><i class="bi bi-geo-alt me-2"></i>123 Finance Street, Money City</li>
+                    </ul>
+                </div>
+            </div>
+            <hr>
+            <div class="text-center">
+                <p class="mb-0">&copy; 2024 Budget Tracker. All rights reserved.</p>
+            </div>
+        </div>
+    </footer>
 
-    <!-- Main Content -->
-    <main>
-        {% block content %}{% endblock %}
-    </main>
-
-    <!-- Bootstrap Bundle with Popper -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-    <!-- Custom Scripts -->
-    {% block scripts %}{% endblock %}
-
-    <!-- Alert Container for Dynamic Notifications -->
-    <div class="alert-container position-fixed top-0 end-0 p-3" style="z-index: 1100;"></div>
+    {% block extra_js %}{% endblock %}
 </body>
 </html>

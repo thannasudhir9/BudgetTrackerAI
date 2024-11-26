@@ -1,0 +1,53 @@
+{% extends "base.html" %}
+
+{% block title %}Import Transactions - Budget Tracker{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row">
+        <div class="col-md-8 offset-md-2">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">Import Transactions</h5>
+                </div>
+                <div class="card-body">
+                    <form action="{{ url_for('import_transactions') }}" method="post" enctype="multipart/form-data">
+                        <div class="mb-4">
+                            <h6>Instructions:</h6>
+                            <ol>
+                                <li>Prepare your CSV file with the following columns:
+                                    <ul class="mt-2">
+                                        <li><code>date</code> - Transaction date (YYYY-MM-DD)</li>
+                                        <li><code>description</code> - Transaction description</li>
+                                        <li><code>amount</code> - Transaction amount (positive number)</li>
+                                        <li><code>type</code> - Transaction type (income/expense)</li>
+                                        <li><code>category</code> - Category name</li>
+                                    </ul>
+                                </li>
+                                <li>Make sure your CSV file uses comma (,) as the delimiter</li>
+                                <li>The first row should contain the column headers</li>
+                                <li>Categories will be created automatically if they don't exist</li>
+                            </ol>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="file" class="form-label">Select CSV File</label>
+                            <input type="file" class="form-control" id="file" name="file" accept=".csv" required>
+                            <div class="form-text">Only CSV files are supported</div>
+                        </div>
+
+                        <div class="mb-3">
+                            <a href="{{ url_for('download_sample_csv') }}" class="btn btn-outline-secondary me-2">
+                                <i class="bi bi-download"></i> Download Sample CSV
+                            </a>
+                            <button type="submit" class="btn btn-primary">
+                                <i class="bi bi-upload"></i> Import Transactions
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

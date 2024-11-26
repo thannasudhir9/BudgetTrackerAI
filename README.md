@@ -41,6 +41,185 @@ A comprehensive web application for personal finance management with role-based 
 - Role-specific navigation
 - Interactive charts and statistics
 
+### File Import Features
+- **CSV Import**
+  - Upload transaction data from CSV files
+  - Automatic category creation
+  - Bulk transaction processing
+  - Sample CSV template available
+  - Error handling and validation
+
+- **PDF Import**
+  - Extract transactions from PDF statements
+  - Support for structured PDF formats
+  - Automatic text extraction
+  - Transaction parsing capabilities
+
+## Import File Requirements
+
+#### CSV Format
+```csv
+Date,Description,Amount,Type,Category
+2024-01-15,Grocery Shopping,-125.50,expense,Food
+2024-01-15,Salary,5000.00,income,Salary
+```
+
+- **Required Columns**:
+  - `Date`: YYYY-MM-DD format
+  - `Description`: Transaction description
+  - `Amount`: Positive for income, negative for expenses
+  - `Type`: 'income' or 'expense'
+  - `Category`: Must match existing categories or will be created
+
+#### PDF Format
+- Clear, readable text
+- Structured transaction data
+- One transaction per line (preferred)
+- Common bank statement formats supported
+
+## Import Process
+1. **Accessing Import Feature**
+   - Navigate to Dashboard
+   - Locate "Import Transactions" card
+   - Choose file type (CSV/PDF)
+
+2. **File Selection**
+   - Click "Choose File" button
+   - Select CSV or PDF file
+   - Maximum file size: 16MB
+
+3. **Processing**
+   - Automatic validation
+   - Category matching/creation
+   - Transaction creation
+   - Error handling
+
+4. **Results**
+   - Success/error count displayed
+   - Failed transactions logged
+   - Automatic file cleanup
+
+## Sample Files
+- Download sample CSV template
+- Use as reference for formatting
+- Test import functionality
+
+## Security Measures
+- File type validation
+- Size restrictions
+- Secure filename handling
+- Automatic file cleanup
+- User data isolation
+
+## Database Setup and Management
+
+### Default Users
+The application comes with four default user types:
+
+1. **Super Admin**
+   - Username: superadmin
+   - Email: superadmin@example.com
+   - Password: superadmin123
+   - Role: Super Administrator
+   - Full system access and management capabilities
+
+2. **Admin**
+   - Username: admin
+   - Email: admin@example.com
+   - Password: admin123
+   - Role: Administrator
+   - System management and user oversight
+
+3. **Pro User**
+   - Username: prouser
+   - Email: prouser@example.com
+   - Password: pro123
+   - Role: Pro User
+   - Access to advanced features
+
+4. **Normal User**
+   - Username: testuser
+   - Email: testuser@example.com
+   - Password: test123
+   - Role: Normal User
+   - Basic feature access
+
+### Default Categories
+Each user is initialized with the following categories:
+
+| Category       | Icon           | Color Code | Description           |
+|---------------|----------------|------------|----------------------|
+| Housing       | home           | #FF9999    | Light red           |
+| Transportation| car            | #99FF99    | Light green         |
+| Food          | utensils       | #9999FF    | Light blue          |
+| Utilities     | bolt           | #FFFF99    | Light yellow        |
+| Insurance     | shield         | #FF99FF    | Light magenta       |
+| Healthcare    | heart          | #99FFFF    | Light cyan          |
+| Savings       | piggy-bank     | #FFB366    | Light orange        |
+| Entertainment | film           | #B366FF    | Light purple        |
+| Shopping      | shopping-cart  | #66FFB3    | Light mint          |
+| Miscellaneous | ellipsis-h     | #808080    | Gray                |
+
+### Database Management Scripts
+
+The application includes two important database management scripts:
+
+1. **Database Setup Script** (`migrations/setup_database.py`)
+   - Creates all necessary database tables
+   - Initializes default users with appropriate roles
+   - Creates default categories for each user
+   - Sets up proper relationships and constraints
+
+   To run the setup script:
+   ```bash
+   python migrations/setup_database.py
+   ```
+
+2. **Database Cleanup Script** (`migrations/cleanup_tables.py`)
+   - Removes unnecessary tables while preserving essential ones
+   - Maintains data integrity
+   - Useful for database maintenance and cleanup
+
+   To run the cleanup script:
+   ```bash
+   python migrations/cleanup_tables.py
+   ```
+
+### Database Setup Process
+
+1. **Initial Setup**
+   ```bash
+   # Create and activate virtual environment
+   python -m venv venv
+   source venv/bin/activate  # On Unix/macOS
+   venv\Scripts\activate     # On Windows
+
+   # Install dependencies
+   pip install -r requirements.txt
+   ```
+
+2. **Database Initialization**
+   ```bash
+   # Clean up any existing tables (if needed)
+   python migrations/cleanup_tables.py
+
+   # Create tables and initialize data
+   python migrations/setup_database.py
+   ```
+
+3. **Verify Setup**
+   - Log in with any of the default user accounts
+   - Check that categories are properly created
+   - Verify user roles and permissions
+
+### Important Notes
+
+- Change default passwords immediately after first login
+- The cleanup script preserves essential tables: user, budget_transaction, category
+- Each user gets their own set of categories with unique icons and colors
+- All passwords are securely hashed using werkzeug's password hashing
+- The `is_active` flag is set to True by default for all users
+
 ## Project Structure
 
 ```
@@ -228,3 +407,147 @@ The application follows a modular architecture:
 ## Contributing
 
 Contributions are welcome! Please feel free to submit pull requests.
+
+## Updates (January 17, 2024)
+
+### Major Changes
+1. Reorganized project structure for better modularity
+2. Implemented Flask factory pattern
+3. Separated user routes into dedicated module
+4. Enhanced role-based access control
+5. Added test users with sample transactions
+
+### Project Structure Update
+The project has been reorganized for better modularity:
+
+```
+budget_tracker/
+├── app.py              # Application factory and configuration
+├── extensions.py       # Flask extensions (SQLAlchemy, Login Manager)
+├── models.py           # Database models
+├── routes.py          # Main application routes
+├── user_routes.py     # User management routes
+├── migrations/        # Database migrations and setup
+│   └── setup_database.py  # Database initialization script
+├── static/           # Static files (CSS, JS, images)
+├── templates/        # HTML templates
+└── instance/         # Instance-specific files
+    └── budget_tracker.db  # SQLite database
+```
+
+### New Test Users
+The setup script now creates the following test users:
+
+| Username  | Email                    | Password      | Role        |
+|-----------|--------------------------|---------------|-------------|
+| admin     | admin@example.com        | admin123      | Admin       |
+| superadmin | superadmin@example.com  | superadmin123 | Super Admin |
+| user      | user@example.com         | user123       | Normal      |
+| pro_user  | pro@example.com          | pro123        | Pro         |
+
+### Updated Database Models
+
+#### User Model Enhancements
+- Role-based access using UserRole enum
+- Last login tracking
+- Activity timestamps (created_at, updated_at)
+- Enhanced role validation methods
+- Secure password hashing
+
+#### Transaction Model Updates
+- Improved category system using TransactionCategory enum
+- Built-in type validation (income/expense)
+- Automatic timestamp management
+- Enhanced relationship with User model
+
+### Transaction Categories
+Now using an enum-based system with predefined categories:
+- Food
+- Transportation
+- Entertainment
+- Shopping
+- Bills
+- Salary
+- Other Income
+
+Each category includes:
+- Name
+- Bootstrap Icon
+- Color scheme for UI
+
+### API Endpoints Update
+
+#### User Management
+- GET `/users` - List all users (Admin only)
+- GET `/api/users/<id>` - Get user details
+- PUT `/api/users/<id>` - Update user
+- POST `/api/users` - Create new user
+- POST `/api/users/<id>/toggle-status` - Toggle user status
+
+#### Transactions
+- GET `/` - Dashboard with transaction overview
+- POST `/transactions` - Create new transaction
+- GET `/transactions` - List user's transactions
+- PUT `/transactions/<id>` - Update transaction
+- DELETE `/transactions/<id>` - Delete transaction
+
+### Role-Based Access Updates
+
+1. **Normal User**
+   - Basic transaction management
+   - Personal dashboard
+   - Limited features
+
+2. **Pro User**
+   - Advanced reporting
+   - Extended transaction history
+   - Additional features
+
+3. **Admin**
+   - User management
+   - System monitoring
+   - Access to all features
+
+4. **Super Admin**
+   - Full system control
+   - User role management
+   - System configuration
+
+### Quick Start with New Features
+
+1. Initialize the database with test data:
+```bash
+python migrations/setup_database.py
+```
+
+2. Run the application:
+```bash
+python app.py
+```
+
+3. Access the application:
+   - URL: http://localhost:5000
+   - Login with any test user credentials
+   - Explore role-specific features
+
+### Development Notes
+
+#### Adding New Features
+1. Create new routes in appropriate route files
+2. Update models if needed
+3. Add new templates
+4. Update role permissions if required
+
+#### Database Updates
+1. Modify models in `models.py`
+2. Update `setup_database.py` if needed
+3. Run setup script to recreate database
+
+### Security Enhancements
+- Improved password hashing using Werkzeug
+- Enhanced role-based access control
+- Better session management
+- Added CSRF protection
+- Improved input validation
+
+For more details on specific features or development guidelines, refer to the documentation above.
