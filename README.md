@@ -1,8 +1,18 @@
 # Budget Tracker
+Last Updated: November 26, 2024
 
 A comprehensive web application for personal finance management with role-based access control, user management, and advanced tracking features. This application provides a secure and user-friendly interface to manage your financial life.
 
 ## Features
+
+### PDF Export Features (New)
+- Client-side PDF generation for instant downloads
+- Clean, professional report layout
+- Automatic date-stamped filenames (BudgetTracker_YYYYMMDD.pdf)
+- High-quality chart and graph rendering
+- Smart element hiding for PDF output
+- Responsive layout optimization
+- Custom print styling for better PDF appearance
 
 ### User Management
 - Role-based access control (NORMAL, PRO, ADMIN, SUPER_ADMIN)
@@ -40,6 +50,8 @@ A comprehensive web application for personal finance management with role-based 
 - Dynamic transaction tables
 - Role-specific navigation
 - Interactive charts and statistics
+- Professional PDF report generation
+- Optimized print layouts
 
 ### File Import Features
 - **CSV Import**
@@ -408,7 +420,7 @@ The application follows a modular architecture:
 
 Contributions are welcome! Please feel free to submit pull requests.
 
-## Updates (January 17, 2024)
+## Updates (Nov 26, 2024)
 
 ### Major Changes
 1. Reorganized project structure for better modularity
@@ -550,4 +562,31 @@ python app.py
 - Added CSRF protection
 - Improved input validation
 
+
+1. Enhanced PDF Export Functionality
+   - Implemented client-side PDF generation using html2pdf.js
+   - Added smart element hiding for cleaner PDF output
+   - Improved chart rendering in PDF exports
+   - Optimized layout for professional appearance
+   - Added dynamic date-stamped filenames
+
+2. Dashboard Improvements
+   - Updated transaction view endpoints
+   - Added period-specific transaction filtering
+   - Enhanced mobile responsiveness
+   - Improved chart display
+   - Added "View All" functionality for each time period
+
+3. Technical Enhancements
+   - Removed server-side PDF generation dependencies
+   - Optimized client-side performance
+   - Enhanced print media queries
+   - Improved cross-browser compatibility
+
+4. UI/UX Improvements
+   - Better button visibility control
+   - Enhanced layout consistency
+   - Improved responsive design
+   - Cleaner PDF output formatting
+   
 For more details on specific features or development guidelines, refer to the documentation above.
