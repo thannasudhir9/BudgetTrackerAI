@@ -321,23 +321,57 @@ def init_routes(app):
 
     @app.route('/api/transactions', methods=['POST'])
     @login_required
-    def add_transaction():
-        data = request.get_json()
-        
-        # Create new transaction
-        transaction = BudgetTransaction(
-            user_id=current_user.id,
-            date=datetime.strptime(data['date'], '%Y-%m-%d'),
-            description=data['description'],
-            amount=float(data['amount']),
-            category=data['category'],
-            type='income' if float(data['amount']) > 0 else 'expense'
-        )
-        
-        db.session.add(transaction)
-        db.session.commit()
-        
-        return jsonify({'message': 'Transaction added successfully'}), 201
+    def create_transaction():
+        try:
+            data = request.get_json()
+            
+            # Create new transaction
+            transaction = BudgetTransaction(
+                user_id=current_user.id,
+                date=datetime.strptime(data['date'], '%Y-%m-%d'),
+                description=data['description'],
+                amount=float(data['amount']),
+                category=data['category']
+            )
+            
+            db.session.add(transaction)
+            db.session.commit()
+            
+            return jsonify({
+                'id': transaction.id,
+                'message': 'Transaction created successfully'
+            }), 201
+            
+        except Exception as e:
+            db.session.rollback()
+            return jsonify({'error': str(e)}), 400
+
+    @app.route('/api/transactions/<int:id>', methods=['PUT'])
+    @login_required
+    def update_transaction(id):
+        try:
+            # Find the transaction
+            transaction = BudgetTransaction.query.filter_by(
+                id=id,
+                user_id=current_user.id
+            ).first_or_404()
+            
+            # Update transaction with new data
+            data = request.get_json()
+            transaction.date = datetime.strptime(data['date'], '%Y-%m-%d')
+            transaction.description = data['description']
+            transaction.amount = float(data['amount'])
+            transaction.category = data['category']
+            
+            db.session.commit()
+            
+            return jsonify({
+                'message': 'Transaction updated successfully'
+            }), 200
+            
+        except Exception as e:
+            db.session.rollback()
+            return jsonify({'error': str(e)}), 400
 
     @app.route('/api/transactions/<int:transaction_id>', methods=['DELETE'])
     @login_required
@@ -433,6 +467,23 @@ def init_routes(app):
         except Exception as e:
             db.session.rollback()
             return jsonify({'error': str(e)}), 400
+
+    @app.route('/api/transactions/<int:id>', methods=['GET'])
+    @login_required
+    def get_transaction(id):
+        transaction = BudgetTransaction.query.filter_by(
+            id=id,
+            user_id=current_user.id
+        ).first_or_404()
+        
+        return jsonify({
+            'id': transaction.id,
+            'date': transaction.date.strftime('%Y-%m-%d'),
+            'description': transaction.description,
+            'amount': float(transaction.amount),
+            'category': transaction.category,
+            'type': 'income' if transaction.amount > 0 else 'expense'
+        })
 
     # Transaction Routes
     @app.route('/transactions')

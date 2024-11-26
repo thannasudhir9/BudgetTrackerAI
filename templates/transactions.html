@@ -72,7 +72,7 @@
                     <h5 class="mb-0">Transaction History</h5>
                 </div>
                 <div class="col-auto">
-                    <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addTransactionModal">
+                    <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addTransactionModal" onclick="addTransaction()">
                         <i class="bi bi-plus-lg"></i> Add Transaction
                     </button>
                     <button class="btn btn-outline-primary" data-bs-toggle="modal" data-bs-target="#importTransactionsModal">
@@ -193,6 +193,7 @@
             </div>
             <div class="modal-body">
                 <form id="addTransactionForm">
+                    <input type="hidden" id="transactionId" name="transactionId">
                     <div class="mb-3">
                         <label class="form-label">Transaction Type</label>
                         <div class="btn-group w-100" role="group">
@@ -313,9 +314,95 @@ function applyFilters() {
     window.location.href = `${window.location.pathname}?${queryParams.toString()}`;
 }
 
+function clearTransactionForm() {
+    const modal = document.getElementById('addTransactionModal');
+    const form = modal.querySelector('form');
+    form.reset();
+    modal.querySelector('#transactionId').value = '';
+    modal.querySelector('.modal-title').textContent = 'Add Transaction';
+}
+
+function addTransaction() {
+    clearTransactionForm();
+    const modal = document.getElementById('addTransactionModal');
+    new bootstrap.Modal(modal).show();
+}
+
 function editTransaction(id) {
-    // TODO: Implement edit transaction
-    console.log('Edit transaction:', id);
+    // Fetch transaction details
+    fetch(`/api/transactions/${id}`)
+        .then(response => {
+            if (!response.ok) {
+                throw new Error('Failed to fetch transaction');
+            }
+            return response.json();
+        })
+        .then(transaction => {
+            // Populate the add/edit transaction modal with the transaction data
+            const modal = document.getElementById('addTransactionModal');
+            modal.querySelector('#transactionId').value = transaction.id;
+            modal.querySelector('input[name="date"]').value = transaction.date;
+            modal.querySelector('input[name="description"]').value = transaction.description;
+            modal.querySelector('input[name="amount"]').value = Math.abs(transaction.amount);
+            modal.querySelector('select[name="category"]').value = transaction.category;
+            
+            // Set the transaction type radio button
+            const type = transaction.amount > 0 ? 'income' : 'expense';
+            modal.querySelector(`input[name="type"][value="${type}"]`).checked = true;
+            
+            // Update modal title
+            modal.querySelector('.modal-title').textContent = 'Edit Transaction';
+            
+            // Show the modal
+            new bootstrap.Modal(modal).show();
+        })
+        .catch(error => {
+            console.error('Error fetching transaction:', error);
+            alert('Error fetching transaction details. Please try again.');
+        });
+}
+
+function saveTransaction() {
+    const modal = document.getElementById('addTransactionModal');
+    const form = modal.querySelector('form');
+    const formData = new FormData(form);
+    const transactionId = formData.get('transactionId');
+    
+    // Convert form data to JSON
+    const data = {
+        date: formData.get('date'),
+        description: formData.get('description'),
+        amount: parseFloat(formData.get('amount')) * (formData.get('type') === 'expense' ? -1 : 1),
+        category: formData.get('category')
+    };
+
+    // Determine if this is a new transaction or an edit
+    const url = transactionId ? `/api/transactions/${transactionId}` : '/api/transactions';
+    const method = transactionId ? 'PUT' : 'POST';
+
+    // Send the request
+    fetch(url, {
+        method: method,
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(data)
+    })
+    .then(response => {
+        if (!response.ok) {
+            throw new Error('Failed to save transaction');
+        }
+        return response.json();
+    })
+    .then(() => {
+        // Close the modal and refresh the page
+        bootstrap.Modal.getInstance(modal).hide();
+        window.location.reload();
+    })
+    .catch(error => {
+        console.error('Error saving transaction:', error);
+        alert('Error saving transaction. Please try again.');
+    });
 }
 
 function deleteTransaction(id) {
@@ -331,39 +418,6 @@ function deleteTransaction(id) {
             }
         });
     }
-}
-
-function saveTransaction() {
-    const form = document.getElementById('addTransactionForm');
-    const formData = new FormData(form);
-    
-    // Convert form data to JSON
-    const data = {};
-    formData.forEach((value, key) => {
-        if (key === 'amount') {
-            // Convert amount to negative if it's an expense
-            data[key] = formData.get('type') === 'expense' ? 
-                -Math.abs(parseFloat(value)) : 
-                Math.abs(parseFloat(value));
-        } else {
-            data[key] = value;
-        }
-    });
-
-    fetch('/api/transactions', {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(data)
-    })
-    .then(response => {
-        if (response.ok) {
-            window.location.reload();
-        } else {
-            alert('Error saving transaction');
-        }
-    });
 }
 
 function importTransactions() {
