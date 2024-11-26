@@ -3,11 +3,28 @@
 {% block title %}Dashboard{% endblock %}
 
 {% block content %}
-<div class="container py-4">
+<style>
+    @media print {
+        .no-print {
+            display: none !important;
+        }
+        .btn {
+            display: none !important;
+        }
+        .container {
+            width: 100% !important;
+            max-width: none !important;
+            padding: 0 !important;
+            margin: 0 !important;
+        }
+    }
+</style>
+
+<div class="container py-4" id="dashboard-content">
     <div class="d-flex justify-content-between align-items-center mb-4">
         <h2 class="mb-0">Dashboard</h2>
-        <div>
-            <button class="btn btn-outline-primary" onclick="downloadAsPDF()">
+        <div class="no-print">
+            <button class="btn btn-outline-primary" onclick="generatePDF()">
                 <i class="bi bi-file-pdf"></i> Download PDF
             </button>
         </div>
@@ -56,7 +73,7 @@
                 <div class="card-body">
                     <div class="d-flex justify-content-between align-items-center mb-4">
                         <h5 class="card-title mb-0">Recent Transactions</h5>
-                        <a href="{{ url_for('view_transactions') }}" class="btn btn-outline-primary btn-sm">View All</a>
+                        <a href="{{ url_for('view_transactions') }}" class="btn btn-outline-primary btn-sm no-print">View All</a>
                     </div>
                     <div class="table-responsive" style="max-height: 300px; overflow-y: auto;">
                         <table class="table table-hover">
@@ -94,7 +111,10 @@
         <div class="col-md-6 mb-4">
             <div class="card border-0 shadow-sm h-100">
                 <div class="card-body">
-                    <h5 class="card-title">Daily Overview</h5>
+                    <div class="d-flex justify-content-between align-items-center mb-4">
+                        <h5 class="card-title mb-0">Daily Overview</h5>
+                        <a href="{{ url_for('view_transactions', filter='daily') }}" class="btn btn-sm btn-outline-primary no-print">View All</a>
+                    </div>
                     <div style="height: 300px; position: relative;">
                         <canvas id="dailyChart"></canvas>
                     </div>
@@ -142,7 +162,10 @@
         <div class="col-md-6 mb-4">
             <div class="card border-0 shadow-sm h-100">
                 <div class="card-body">
-                    <h5 class="card-title">Weekly Overview</h5>
+                    <div class="d-flex justify-content-between align-items-center mb-4">
+                        <h5 class="card-title mb-0">Weekly Overview</h5>
+                        <a href="{{ url_for('view_transactions', filter='weekly') }}" class="btn btn-sm btn-outline-primary no-print">View All</a>
+                    </div>
                     <div style="height: 300px; position: relative;">
                         <canvas id="weeklyChart"></canvas>
                     </div>
@@ -193,7 +216,10 @@
         <div class="col-md-6 mb-4">
             <div class="card border-0 shadow-sm h-100">
                 <div class="card-body">
-                    <h5 class="card-title">Monthly Overview</h5>
+                    <div class="d-flex justify-content-between align-items-center mb-4">
+                        <h5 class="card-title mb-0">Monthly Overview</h5>
+                        <a href="{{ url_for('view_transactions', filter='monthly') }}" class="btn btn-sm btn-outline-primary no-print">View All</a>
+                    </div>
                     <div style="height: 300px; position: relative;">
                         <canvas id="monthlyChart"></canvas>
                     </div>
@@ -241,7 +267,10 @@
         <div class="col-md-6 mb-4">
             <div class="card border-0 shadow-sm h-100">
                 <div class="card-body">
-                    <h5 class="card-title">Yearly Overview</h5>
+                    <div class="d-flex justify-content-between align-items-center mb-4">
+                        <h5 class="card-title mb-0">Yearly Overview</h5>
+                        <a href="{{ url_for('view_transactions', filter='yearly') }}" class="btn btn-sm btn-outline-primary no-print">View All</a>
+                    </div>
                     <div style="height: 300px; position: relative;">
                         <canvas id="yearlyChart"></canvas>
                     </div>
@@ -290,10 +319,38 @@
 
 {% block extra_js %}
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
 <script>
-// Define downloadAsPDF function globally
-function downloadAsPDF() {
-    window.location.href = '/dashboard/pdf';
+function generatePDF() {
+    const element = document.getElementById('dashboard-content');
+    const today = new Date();
+    const dateStr = today.getFullYear() + 
+                   String(today.getMonth() + 1).padStart(2, '0') + 
+                   String(today.getDate()).padStart(2, '0');
+    
+    const opt = {
+        margin: 0.5,
+        filename: `BudgetTracker_${dateStr}.pdf`,
+        image: { type: 'jpeg', quality: 1 },
+        html2canvas: { 
+            scale: 2,
+            useCORS: true,
+            logging: true,
+            removeContainer: true
+        },
+        jsPDF: { 
+            unit: 'in',
+            orientation: 'portrait'
+        }
+    };
+    
+    // Add a class to the body during PDF generation
+    document.body.classList.add('generating-pdf');
+    
+    html2pdf().set(opt).from(element).save().then(() => {
+        // Remove the class after PDF generation
+        document.body.classList.remove('generating-pdf');
+    });
 }
 
 document.addEventListener('DOMContentLoaded', function() {
