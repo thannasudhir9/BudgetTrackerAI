@@ -10,6 +10,8 @@ from enum import Enum
 from models import User, BudgetTransaction, UserRole, TransactionCategory
 from extensions import db
 from sqlalchemy import desc
+import secrets
+from flask_mail import Message
 
 def init_routes(app):
     # Home Route
@@ -222,21 +224,73 @@ def init_routes(app):
             return redirect(url_for('dashboard'))
 
         if request.method == 'POST':
-            username = request.form.get('username')
+            name = request.form.get('name')
             email = request.form.get('email')
             password = request.form.get('password')
+            confirm_password = request.form.get('confirm_password')
             
+            # Validate required fields
+            if not name or not email or not password or not confirm_password:
+                flash('All fields are required')
+                return redirect(url_for('register'))
+            
+            # Validate password match
+            if password != confirm_password:
+                flash('Passwords do not match')
+                return redirect(url_for('register'))
+                
+            # Validate password length
+            if len(password) < 8:
+                flash('Password must be at least 8 characters long')
+                return redirect(url_for('register'))
+            
+            # Check if email already exists
             if User.query.filter_by(email=email).first():
                 flash('Email already registered')
                 return redirect(url_for('register'))
             
-            user = User(username=username, email=email)
+            # Create new user
+            user = User(username=name, email=email)
             user.set_password(password)
             db.session.add(user)
-            db.session.commit()
             
-            flash('Registration successful')
-            return redirect(url_for('login'))
+            try:
+                db.session.commit()
+                
+                # Send welcome email
+                try:
+                    msg = Message(
+                        'Welcome to Budget Tracker!',
+                        sender=app.config['MAIL_DEFAULT_SENDER'],
+                        recipients=[email]
+                    )
+                    msg.body = f'''Hi {name},
+
+Welcome to Budget Tracker! We're excited to have you on board.
+
+Here are some quick tips to get started:
+1. Log in to your account
+2. Add your first transaction
+3. Check out the dashboard to see your financial overview
+
+If you have any questions, feel free to reach out to our support team.
+
+Best regards,
+The Budget Tracker Team
+'''
+                    mail.send(msg)
+                except Exception as e:
+                    # Log the error but don't prevent registration
+                    print(f"Error sending welcome email: {str(e)}")
+                
+                flash('Registration successful! Please check your email for welcome information.')
+                return redirect(url_for('login'))
+                
+            except Exception as e:
+                db.session.rollback()
+                print(f"Error during registration: {str(e)}")
+                flash('An error occurred during registration. Please try again.')
+                return redirect(url_for('register'))
         
         return render_template('register.html')
 
@@ -520,6 +574,76 @@ def init_routes(app):
             'category': transaction.category,
             'type': 'income' if transaction.amount > 0 else 'expense'
         })
+
+    @app.route('/api/request-password-reset', methods=['POST'])
+    def request_password_reset():
+        try:
+            data = request.get_json()
+            email = data.get('email')
+            
+            if not email:
+                return jsonify({'error': 'Email is required'}), 400
+                
+            user = User.query.filter_by(email=email).first()
+            if not user:
+                # Return success even if user doesn't exist for security
+                return jsonify({
+                    'message': 'If an account exists with this email, you will receive password reset instructions.'
+                }), 200
+            
+            # Generate reset token
+            token = secrets.token_urlsafe(32)
+            user.reset_token = token
+            user.reset_token_expires = datetime.utcnow() + timedelta(hours=1)
+            db.session.commit()
+            
+            # Send reset email
+            reset_url = url_for('reset_password', token=token, _external=True)
+            msg = Message(
+                'Password Reset Request',
+                sender=app.config['MAIL_DEFAULT_SENDER'],
+                recipients=[email]
+            )
+            msg.body = f'''To reset your password, visit the following link:
+{reset_url}
+
+If you did not make this request, simply ignore this email and no changes will be made.
+
+This link will expire in 1 hour.
+'''
+            mail.send(msg)
+            
+            return jsonify({
+                'message': 'Password reset instructions have been sent to your email.'
+            }), 200
+            
+        except Exception as e:
+            print(f"Error in password reset request: {str(e)}")
+            return jsonify({
+                'error': 'An error occurred while processing your request.'
+            }), 500
+
+    """ @app.route('/reset-password/<token>', methods=['GET', 'POST'])
+    def reset_password(token):
+        user = User.query.filter_by(reset_token=token).first()
+        
+        if not user or not user.reset_token_expires or user.reset_token_expires < datetime.utcnow():
+            flash('The password reset link is invalid or has expired.', 'danger')
+            return redirect(url_for('login'))
+            
+        if request.method == 'POST':
+            password = request.form.get('password')
+            if not password:
+                flash('Password is required.', 'danger')
+            else:
+                user.set_password(password)
+                user.reset_token = None
+                user.reset_token_expires = None
+                db.session.commit()
+                flash('Your password has been updated! You can now log in with your new password.', 'success')
+                return redirect(url_for('login'))
+                
+        return render_template('reset_password.html') """
 
     # Transaction Routes
     @app.route('/transactions')

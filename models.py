@@ -48,7 +48,8 @@ class User(UserMixin, db.Model):
     created_at = db.Column(db.DateTime, nullable=False, default=datetime.utcnow)
     updated_at = db.Column(db.DateTime, onupdate=datetime.utcnow)
     last_login = db.Column(db.DateTime)
-    
+    reset_token = db.Column(db.String(100), unique=True)
+    reset_token_expires = db.Column(db.DateTime)
     # Relationships
     transactions = db.relationship('BudgetTransaction', backref='user', lazy=True)
     

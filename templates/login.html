@@ -33,15 +33,21 @@
                         </div>
 
                         <!-- Password -->
-                        <div class="form-floating mb-3">
-                            <input type="password" class="form-control" id="password" name="password" placeholder="Password" required>
-                            <label for="password">Password</label>
+                        <div class="mb-3">
+                            <label for="password" class="form-label">Password</label>
+                            <div class="input-group">
+                                <input type="password" class="form-control" id="password" name="password" required>
+                                <button class="btn btn-outline-secondary" type="button" id="togglePassword">
+                                    <i class="bi bi-eye-slash" id="togglePasswordIcon"></i>
+                                </button>
+                            </div>
                         </div>
 
                         <!-- Remember Me -->
                         <div class="form-check mb-3">
                             <input class="form-check-input" type="checkbox" id="remember" name="remember">
                             <label class="form-check-label" for="remember">Remember me</label>
+                            <a href="#" class="float-end text-decoration-none" data-bs-toggle="modal" data-bs-target="#forgotPasswordModal">Forgot Password?</a>
                         </div>
 
                         <!-- Submit Button -->
@@ -52,7 +58,6 @@
                         <!-- Links -->
                         <div class="text-center mt-4">
                             <p class="mb-2">Don't have an account? <a href="{{ url_for('register') }}" class="text-primary text-decoration-none">Register here</a></p>
-                            <p class="mb-0"><a href="#" class="text-muted text-decoration-none">Forgot password?</a></p>
                         </div>
                     </form>
                 </div>
@@ -76,4 +81,48 @@
         </div>
     </div>
 </div>
+
+<!-- Forgot Password Modal -->
+<div class="modal fade" id="forgotPasswordModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Reset Password</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <form method="POST" action="{{ url_for('reset_password_request') }}">
+                    <div class="mb-3">
+                        <label for="reset_email" class="form-label">Email Address</label>
+                        <input type="email" class="form-control" id="reset_email" name="email" required>
+                        <div class="form-text">We'll send you instructions to reset your password.</div>
+                    </div>
+                    <div class="d-grid">
+                        <button type="submit" class="btn btn-primary">Send Reset Link</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% endblock %}
+
+{% block extra_js %}
+    <script>
+        document.getElementById('togglePassword').addEventListener('click', function() {
+            const passwordInput = document.getElementById('password');
+            const icon = document.getElementById('togglePasswordIcon');
+            
+            if (passwordInput.type === 'password') {
+                passwordInput.type = 'text';
+                icon.classList.remove('bi-eye-slash');
+                icon.classList.add('bi-eye');
+            } else {
+                passwordInput.type = 'password';
+                icon.classList.remove('bi-eye');
+                icon.classList.add('bi-eye-slash');
+            }
+        });
+    </script>
 {% endblock %}
