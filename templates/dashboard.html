@@ -166,7 +166,28 @@
             <div class="col-md-6 mb-4">
                 <div class="card h-100">
                     <div class="card-header">
-                        <h5 class="card-title mb-0">Daily Overview</h5>
+                        <div class="d-flex justify-content-between align-items-center">
+                            <h5 class="card-title mb-0">Daily Overview</h5>
+                            <div class="d-flex gap-2">
+                                <select id="monthSelect" class="form-select form-select-sm" style="width: auto;">
+                                    <option value="1">January</option>
+                                    <option value="2">February</option>
+                                    <option value="3">March</option>
+                                    <option value="4">April</option>
+                                    <option value="5">May</option>
+                                    <option value="6">June</option>
+                                    <option value="7">July</option>
+                                    <option value="8">August</option>
+                                    <option value="9">September</option>
+                                    <option value="10">October</option>
+                                    <option value="11">November</option>
+                                    <option value="12">December</option>
+                                </select>
+                                <select id="yearSelect" class="form-select form-select-sm" style="width: auto;">
+                                    <!-- Will be populated by JavaScript -->
+                                </select>
+                            </div>
+                        </div>
                     </div>
                     <div class="card-body">
                         <div style="height: 300px; position: relative;">
@@ -176,34 +197,17 @@
                         <div class="mt-4">
                             <h6 class="mb-3">Daily Transactions</h6>
                             <div class="table-responsive" style="max-height: 300px; overflow-y: auto;">
-                                <table class="table table-hover table-sm">
-                                    <thead class="table-light">
+                                <table class="table table-hover" id="dailyTransactionsTable">
+                                    <thead class="table-light sticky-top">
                                         <tr>
                                             <th>Date</th>
                                             <th>Description</th>
                                             <th>Category</th>
-                                            <th>Amount</th>
+                                            <th class="text-end">Amount</th>
                                         </tr>
                                     </thead>
                                     <tbody>
-                                        {% for transaction in daily_transactions %}
-                                        <tr>
-                                            <td>{{ transaction.date.strftime('%Y-%m-%d') }}</td>
-                                            <td>{{ transaction.description }}</td>
-                                            <td>
-                                                <span class="badge bg-{{ 'success' if transaction.amount > 0 else 'danger' }}">
-                                                    {{ transaction.category }}
-                                                </span>
-                                            </td>
-                                            <td class="{{ 'text-success' if transaction.amount > 0 else 'text-danger' }}">
-                                                {{ '+' if transaction.amount > 0 else '-' }}<span class="currency-symbol">$</span><span data-amount="{{ transaction.amount|abs }}">{{ "%.2f"|format(transaction.amount|abs) }}</span>
-                                            </td>
-                                        </tr>
-                                        {% else %}
-                                        <tr>
-                                            <td colspan="4" class="text-center">No transactions found</td>
-                                        </tr>
-                                        {% endfor %}
+                                        <!-- Will be populated by JavaScript -->
                                     </tbody>
                                 </table>
                             </div>
@@ -218,7 +222,28 @@
                     <div class="card-body">
                         <div class="d-flex justify-content-between align-items-center mb-4">
                             <h5 class="card-title mb-0">Weekly Overview</h5>
-                            <a href="{{ url_for('view_transactions', filter='weekly') }}" class="btn btn-sm btn-outline-primary no-print">View All</a>
+                            <div class="d-flex gap-2">
+                                <select id="weekMonthSelect" class="form-select form-select-sm" style="width: auto;">
+                                    <option value="1">January</option>
+                                    <option value="2">February</option>
+                                    <option value="3">March</option>
+                                    <option value="4">April</option>
+                                    <option value="5">May</option>
+                                    <option value="6">June</option>
+                                    <option value="7">July</option>
+                                    <option value="8">August</option>
+                                    <option value="9">September</option>
+                                    <option value="10">October</option>
+                                    <option value="11">November</option>
+                                    <option value="12">December</option>
+                                </select>
+                                <select id="weekYearSelect" class="form-select form-select-sm" style="width: auto;">
+                                    <!-- Will be populated by JavaScript -->
+                                </select>
+                                <select id="weekSelect" class="form-select form-select-sm" style="width: auto;">
+                                    <!-- Will be populated by JavaScript -->
+                                </select>
+                            </div>
                         </div>
                         <div style="height: 300px; position: relative;">
                             <canvas id="weeklyChart"></canvas>
@@ -227,34 +252,17 @@
                         <div class="mt-4">
                             <h6 class="mb-3">Weekly Transactions</h6>
                             <div class="table-responsive" style="max-height: 300px; overflow-y: auto;">
-                                <table class="table table-hover table-sm">
-                                    <thead class="table-light">
+                                <table class="table table-hover" id="weeklyTransactionsTable">
+                                    <thead class="table-light sticky-top">
                                         <tr>
                                             <th>Date</th>
                                             <th>Description</th>
                                             <th>Category</th>
-                                            <th>Amount</th>
+                                            <th class="text-end">Amount</th>
                                         </tr>
                                     </thead>
                                     <tbody>
-                                        {% for transaction in weekly_transactions %}
-                                        <tr>
-                                            <td>{{ transaction.date.strftime('%Y-%m-%d') }}</td>
-                                            <td>{{ transaction.description }}</td>
-                                            <td>
-                                                <span class="badge bg-{{ 'success' if transaction.amount > 0 else 'danger' }}">
-                                                    {{ transaction.category }}
-                                                </span>
-                                            </td>
-                                            <td class="{{ 'text-success' if transaction.amount > 0 else 'text-danger' }}">
-                                                {{ '+' if transaction.amount > 0 else '-' }}<span class="currency-symbol">$</span><span data-amount="{{ transaction.amount|abs }}">{{ "%.2f"|format(transaction.amount|abs) }}</span>
-                                            </td>
-                                        </tr>
-                                        {% else %}
-                                        <tr>
-                                            <td colspan="4" class="text-center">No transactions found</td>
-                                        </tr>
-                                        {% endfor %}
+                                        <!-- Will be populated by JavaScript -->
                                     </tbody>
                                 </table>
                             </div>
@@ -524,6 +532,241 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     });
 
+    // Initialize year select options
+    const yearSelect = document.getElementById('yearSelect');
+    const currentYear = new Date().getFullYear();
+    for (let year = currentYear; year >= currentYear - 5; year--) {
+        const option = document.createElement('option');
+        option.value = year;
+        option.textContent = year;
+        yearSelect.appendChild(option);
+    }
+
+    // Set current month and year in selects
+    const currentMonth = new Date().getMonth() + 1; // JavaScript months are 0-based
+    document.getElementById('monthSelect').value = currentMonth;
+    document.getElementById('yearSelect').value = currentYear;
+
+    // Function to fetch and update daily data
+    async function updateDailyChart(month, year) {
+        try {
+            const response = await fetch(`/api/daily-data/${year}/${month}`);
+            if (!response.ok) throw new Error('Failed to fetch data');
+            const dailyData = await response.json();
+
+            // Update chart
+            const dailyChart = Chart.getChart('dailyChart');
+            if (dailyChart) {
+                dailyChart.data.labels = dailyData.map(d => new Date(d.date).getDate());
+                dailyChart.data.datasets[0].data = dailyData.map(d => d.income);
+                dailyChart.data.datasets[1].data = dailyData.map(d => d.expenses);
+                dailyChart.update();
+            }
+        } catch (error) {
+            console.error('Error fetching daily data:', error);
+        }
+    }
+
+    // Function to update daily transactions table
+    async function updateDailyTransactions(month, year) {
+        try {
+            const response = await fetch(`/api/daily-transactions/${year}/${month}`);
+            if (!response.ok) throw new Error('Failed to fetch transactions');
+            const transactions = await response.json();
+
+            const tbody = document.getElementById('dailyTransactionsTable').getElementsByTagName('tbody')[0];
+            tbody.innerHTML = ''; // Clear existing rows
+
+            transactions.forEach(transaction => {
+                const row = document.createElement('tr');
+                row.className = transaction.amount < 0 ? 'table-danger' : 'table-success';
+                
+                row.innerHTML = `
+                    <td>${formatDate(transaction.date)}</td>
+                    <td>${transaction.description}</td>
+                    <td>
+                        <span class="badge rounded-pill" style="background-color: ${transaction.category_color}">
+                            ${transaction.category}
+                        </span>
+                    </td>
+                    <td class="text-end">${formatCurrency(transaction.amount)}</td>
+                `;
+                tbody.appendChild(row);
+            });
+
+            if (transactions.length === 0) {
+                tbody.innerHTML = `
+                    <tr>
+                        <td colspan="4" class="text-center">No transactions found</td>
+                    </tr>
+                `;
+            }
+        } catch (error) {
+            console.error('Error fetching transactions:', error);
+        }
+    }
+
+    // Add event listeners for month and year selection
+    document.getElementById('monthSelect').addEventListener('change', function() {
+        const month = this.value;
+        const year = document.getElementById('yearSelect').value;
+        updateDailyChart(month, year);
+        updateDailyTransactions(month, year);
+    });
+
+    document.getElementById('yearSelect').addEventListener('change', function() {
+        const month = document.getElementById('monthSelect').value;
+        const year = this.value;
+        updateDailyChart(month, year);
+        updateDailyTransactions(month, year);
+    });
+
+    // Initial load of transactions
+    updateDailyTransactions(currentMonth, currentYear);
+
+    // Initialize year select options for both daily and weekly views
+    function initYearSelect(selectId) {
+        const yearSelect = document.getElementById(selectId);
+        const currentYear = new Date().getFullYear();
+        yearSelect.innerHTML = ''; // Clear existing options
+        for (let year = currentYear; year >= currentYear - 5; year--) {
+            const option = document.createElement('option');
+            option.value = year;
+            option.textContent = year;
+            yearSelect.appendChild(option);
+        }
+        yearSelect.value = currentYear;
+    }
+
+    // Initialize year selects
+    initYearSelect('yearSelect');
+    initYearSelect('weekYearSelect');
+
+    // Set current month in selects
+    document.getElementById('monthSelect').value = currentMonth;
+    document.getElementById('weekMonthSelect').value = currentMonth;
+
+    // Function to get week number of a date
+    function getWeekNumber(date) {
+        const firstDayOfMonth = new Date(date.getFullYear(), date.getMonth(), 1);
+        const firstWeekday = firstDayOfMonth.getDay();
+        return Math.ceil((date.getDate() + firstWeekday) / 7);
+    }
+
+    // Function to update week options based on selected month and year
+    function updateWeekOptions(month, year) {
+        const weekSelect = document.getElementById('weekSelect');
+        weekSelect.innerHTML = ''; // Clear existing options
+        
+        const date = new Date(year, month - 1, 1);
+        const lastDay = new Date(year, month, 0).getDate();
+        const numWeeks = Math.ceil((lastDay + date.getDay()) / 7);
+        
+        for (let week = 1; week <= numWeeks; week++) {
+            const option = document.createElement('option');
+            option.value = week;
+            option.textContent = `Week ${week}`;
+            weekSelect.appendChild(option);
+        }
+        
+        // Set current week if it's current month and year
+        const now = new Date();
+        if (month === now.getMonth() + 1 && year === now.getFullYear()) {
+            weekSelect.value = getWeekNumber(now);
+        } else {
+            weekSelect.value = 1;
+        }
+    }
+
+    // Function to fetch and update weekly data
+    async function updateWeeklyChart(month, year, week) {
+        try {
+            const response = await fetch(`/api/weekly-data/${year}/${month}/${week}`);
+            if (!response.ok) throw new Error('Failed to fetch data');
+            const weeklyData = await response.json();
+
+            // Update chart
+            const weeklyChart = Chart.getChart('weeklyChart');
+            if (weeklyChart) {
+                weeklyChart.data.labels = weeklyData.map(d => d.date);
+                weeklyChart.data.datasets[0].data = weeklyData.map(d => d.income);
+                weeklyChart.data.datasets[1].data = weeklyData.map(d => d.expenses);
+                weeklyChart.update();
+            }
+        } catch (error) {
+            console.error('Error fetching weekly data:', error);
+        }
+    }
+
+    // Function to update weekly transactions list
+    async function updateWeeklyTransactions(year, month, week) {
+        try {
+            const response = await fetch(`/api/weekly-transactions/${year}/${month}/${week}`);
+            if (!response.ok) throw new Error('Failed to fetch transactions');
+            const transactions = await response.json();
+
+            const tbody = document.getElementById('weeklyTransactionsTable').getElementsByTagName('tbody')[0];
+            tbody.innerHTML = ''; // Clear existing rows
+
+            transactions.forEach(transaction => {
+                const row = document.createElement('tr');
+                row.className = transaction.amount < 0 ? 'table-danger' : 'table-success';
+                
+                row.innerHTML = `
+                    <td>${formatDate(transaction.date)}</td>
+                    <td>${transaction.description}</td>
+                    <td>
+                        <span class="badge rounded-pill" style="background-color: ${transaction.category_color}">
+                            ${transaction.category}
+                        </span>
+                    </td>
+                    <td class="text-end">${formatCurrency(transaction.amount)}</td>
+                `;
+                tbody.appendChild(row);
+            });
+
+            if (transactions.length === 0) {
+                tbody.innerHTML = `
+                    <tr>
+                        <td colspan="4" class="text-center">No transactions found</td>
+                    </tr>
+                `;
+            }
+        } catch (error) {
+            console.error('Error fetching transactions:', error);
+        }
+    }
+
+    // Add event listeners for weekly view controls
+    document.getElementById('weekMonthSelect').addEventListener('change', function() {
+        const month = parseInt(this.value);
+        const year = parseInt(document.getElementById('weekYearSelect').value);
+        updateWeekOptions(month, year);
+        const week = parseInt(document.getElementById('weekSelect').value);
+        updateWeeklyChart(month, year, week);
+        updateWeeklyTransactions(year, month, week);
+    });
+
+    document.getElementById('weekYearSelect').addEventListener('change', function() {
+        const month = parseInt(document.getElementById('weekMonthSelect').value);
+        const year = parseInt(this.value);
+        updateWeekOptions(month, year);
+        const week = parseInt(document.getElementById('weekSelect').value);
+        updateWeeklyChart(month, year, week);
+        updateWeeklyTransactions(year, month, week);
+    });
+
+    document.getElementById('weekSelect').addEventListener('change', function() {
+        const week = parseInt(this.value);
+        const month = parseInt(document.getElementById('weekMonthSelect').value);
+        const year = parseInt(document.getElementById('weekYearSelect').value);
+        updateWeeklyChart(month, year, week);
+        updateWeeklyTransactions(year, month, week);
+    });
+
+    // Initialize week options for current month and year
+    updateWeekOptions(currentMonth, currentYear);
+
     // Weekly Chart
     const weeklyCtx = document.getElementById('weeklyChart').getContext('2d');
     const weeklyData = {
@@ -566,6 +809,24 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         }
     });
+
+    // Function to format currency
+    function formatCurrency(amount) {
+        return new Intl.NumberFormat('en-US', {
+            style: 'currency',
+            currency: 'USD'
+        }).format(amount);
+    }
+
+    // Function to format date
+    function formatDate(dateStr) {
+        const date = new Date(dateStr);
+        return date.toLocaleDateString('en-US', {
+            weekday: 'short',
+            month: 'short',
+            day: 'numeric'
+        });
+    }
 
     // Monthly Chart
     const monthlyCtx = document.getElementById('monthlyChart').getContext('2d');
@@ -735,6 +996,12 @@ document.addEventListener('DOMContentLoaded', function() {
     `;
 
     categoryStats.innerHTML = statsHtml;
+
+    // Initial load of weekly transactions
+    const initialWeek = parseInt(document.getElementById('weekSelect').value);
+    const initialMonth = parseInt(document.getElementById('weekMonthSelect').value);
+    const initialYear = parseInt(document.getElementById('weekYearSelect').value);
+    updateWeeklyTransactions(initialYear, initialMonth, initialWeek);
 });
 
 function generatePDF() {

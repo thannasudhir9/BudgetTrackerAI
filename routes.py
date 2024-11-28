@@ -890,3 +890,249 @@ This link will expire in 1 hour.
             db.session.rollback()
             print(f"Error auto-categorizing transactions: {str(e)}")
             return jsonify({'error': str(e)}), 400
+
+    @app.route('/api/daily-data/<int:year>/<int:month>')
+    @login_required
+    def get_daily_data(year, month):
+        try:
+            # Calculate start and end dates for the specified month
+            start_date = datetime(year, month, 1)
+            if month == 12:
+                end_date = datetime(year + 1, 1, 1)
+            else:
+                end_date = datetime(year, month + 1, 1)
+        
+            # Get number of days in the month
+            days_in_month = (end_date - start_date).days
+        
+            # Initialize daily data
+            daily_data = []
+        
+            # Get all transactions for the month
+            transactions = BudgetTransaction.query.filter(
+                BudgetTransaction.user_id == current_user.id,
+                BudgetTransaction.date >= start_date,
+                BudgetTransaction.date < end_date
+            ).all()
+        
+            # Group transactions by day
+            transactions_by_day = {}
+            for transaction in transactions:
+                day = transaction.date.day
+                if day not in transactions_by_day:
+                    transactions_by_day[day] = []
+                transactions_by_day[day].append(transaction)
+        
+            # Calculate daily totals for each day in the month
+            for day in range(1, days_in_month + 1):
+                date = start_date + timedelta(days=day-1)
+                day_transactions = transactions_by_day.get(day, [])
+            
+                income = sum(t.amount for t in day_transactions if t.amount > 0)
+                expenses = abs(sum(t.amount for t in day_transactions if t.amount < 0))
+            
+                daily_data.append({
+                    'date': date.strftime('%Y-%m-%d'),
+                    'income': float(income),
+                    'expenses': float(expenses)
+                })
+        
+            return jsonify(daily_data)
+        
+        except Exception as e:
+            return jsonify({'error': str(e)}), 500
+
+    @app.route('/api/weekly-data/<int:year>/<int:month>/<int:week>')
+    @login_required
+    def get_weekly_data(year, month, week):
+        try:
+            # Calculate the first day of the month
+            first_day = datetime(year, month, 1)
+            
+            # Calculate the last day of the month
+            if month == 12:
+                last_day = datetime(year + 1, 1, 1) - timedelta(days=1)
+            else:
+                last_day = datetime(year, month + 1, 1) - timedelta(days=1)
+            
+            # Calculate the start and end dates for the selected week
+            # First, get the weekday of the first day (0 = Monday, 6 = Sunday)
+            first_weekday = first_day.weekday()
+            
+            # Calculate the start date of the selected week
+            week_start = first_day + timedelta(days=(week-1)*7 - first_weekday)
+            week_end = week_start + timedelta(days=6)
+            
+            # Ensure we don't go beyond the month boundaries
+            week_start = max(week_start, first_day)
+            week_end = min(week_end, last_day)
+            
+            # Get all transactions for the week
+            transactions = BudgetTransaction.query.filter(
+                BudgetTransaction.user_id == current_user.id,
+                BudgetTransaction.date >= week_start,
+                BudgetTransaction.date <= week_end
+            ).order_by(BudgetTransaction.date).all()
+            
+            # Group transactions by day
+            daily_data = []
+            current_date = week_start
+            
+            while current_date <= week_end:
+                # Get transactions for current day
+                day_transactions = [t for t in transactions if t.date.date() == current_date.date()]
+                
+                # Calculate totals
+                income = sum(t.amount for t in day_transactions if t.amount > 0)
+                expenses = abs(sum(t.amount for t in day_transactions if t.amount < 0))
+                
+                # Add data point
+                daily_data.append({
+                    'date': current_date.strftime('%Y-%m-%d'),
+                    'day': current_date.strftime('%A'),  # Day name (Monday, Tuesday, etc.)
+                    'income': float(income),
+                    'expenses': float(expenses)
+                })
+                
+                current_date += timedelta(days=1)
+        
+            return jsonify(daily_data)
+        
+        except Exception as e:
+            return jsonify({'error': str(e)}), 500
+
+    @app.route('/api/monthly-transactions/<int:year>/<int:month>')
+    @login_required
+    def get_monthly_transactions(year, month):
+        try:
+            # Calculate start and end dates for the month
+            start_date = datetime(year, month, 1)
+            if month == 12:
+                end_date = datetime(year + 1, 1, 1)
+            else:
+                end_date = datetime(year, month + 1, 1)
+
+            # Get all transactions for the month
+            transactions = BudgetTransaction.query.filter(
+                BudgetTransaction.user_id == current_user.id,
+                BudgetTransaction.date >= start_date,
+                BudgetTransaction.date < end_date
+            ).order_by(BudgetTransaction.date.desc()).all()
+
+            # Convert transactions to JSON-serializable format
+            transactions_data = []
+            for transaction in transactions:
+                # Get category color (you may need to adjust this based on your category color implementation)
+                category_color = generate_category_color(transaction.category)
+                
+                transactions_data.append({
+                    'date': transaction.date.strftime('%Y-%m-%d'),
+                    'description': transaction.description,
+                    'category': transaction.category,
+                    'category_color': category_color,
+                    'amount': float(transaction.amount)
+                })
+
+            return jsonify(transactions_data)
+
+        except Exception as e:
+            return jsonify({'error': str(e)}), 500
+
+    def generate_category_color(category_name):
+        """Generate a consistent color for a category."""
+        # Use a hash of the category name to generate a consistent hue
+        hash_value = sum(ord(c) for c in category_name)
+        hue = hash_value % 360
+        
+        # Use fixed saturation and lightness for pastel colors
+        saturation = 60
+        lightness = 70
+        
+        # Convert HSL to RGB
+        return f'hsl({hue}, {saturation}%, {lightness}%)'
+
+    @app.route('/api/daily-transactions/<int:year>/<int:month>')
+    @login_required
+    def get_daily_transactions(year, month):
+        try:
+            # Calculate start and end dates for the month
+            start_date = datetime(year, month, 1)
+            if month == 12:
+                end_date = datetime(year + 1, 1, 1)
+            else:
+                end_date = datetime(year, month + 1, 1)
+
+            # Get all transactions for the month
+            transactions = BudgetTransaction.query.filter(
+                BudgetTransaction.user_id == current_user.id,
+                BudgetTransaction.date >= start_date,
+                BudgetTransaction.date < end_date
+            ).order_by(BudgetTransaction.date.desc()).all()
+
+            # Convert transactions to JSON-serializable format
+            transactions_data = []
+            for transaction in transactions:
+                category_color = generate_category_color(transaction.category)
+                
+                transactions_data.append({
+                    'date': transaction.date.strftime('%Y-%m-%d'),
+                    'description': transaction.description,
+                    'category': transaction.category,
+                    'category_color': category_color,
+                    'amount': float(transaction.amount)
+                })
+
+            return jsonify(transactions_data)
+
+        except Exception as e:
+            return jsonify({'error': str(e)}), 500
+
+    @app.route('/api/weekly-transactions/<int:year>/<int:month>/<int:week>')
+    @login_required
+    def get_weekly_transactions(year, month, week):
+        try:
+            # Calculate the first day of the month
+            first_day = datetime(year, month, 1)
+            
+            # Calculate the last day of the month
+            if month == 12:
+                last_day = datetime(year + 1, 1, 1) - timedelta(days=1)
+            else:
+                last_day = datetime(year, month + 1, 1) - timedelta(days=1)
+            
+            # Calculate the start and end dates for the selected week
+            # First, get the weekday of the first day (0 = Monday, 6 = Sunday)
+            first_weekday = first_day.weekday()
+            
+            # Calculate the start date of the selected week
+            week_start = first_day + timedelta(days=(week-1)*7 - first_weekday)
+            week_end = week_start + timedelta(days=6)
+            
+            # Ensure we don't go beyond the month boundaries
+            week_start = max(week_start, first_day)
+            week_end = min(week_end, last_day)
+            
+            # Get all transactions for the week
+            transactions = BudgetTransaction.query.filter(
+                BudgetTransaction.user_id == current_user.id,
+                BudgetTransaction.date >= week_start,
+                BudgetTransaction.date <= week_end
+            ).order_by(BudgetTransaction.date.desc()).all()
+            
+            # Convert transactions to JSON-serializable format
+            transactions_data = []
+            for transaction in transactions:
+                category_color = generate_category_color(transaction.category)
+                
+                transactions_data.append({
+                    'date': transaction.date.strftime('%Y-%m-%d'),
+                    'description': transaction.description,
+                    'category': transaction.category,
+                    'category_color': category_color,
+                    'amount': float(transaction.amount)
+                })
+            
+            return jsonify(transactions_data)
+        
+        except Exception as e:
+            return jsonify({'error': str(e)}), 500
