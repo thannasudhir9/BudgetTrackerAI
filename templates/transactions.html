@@ -81,6 +81,9 @@
                     <button class="btn btn-outline-primary" onclick="exportTransactions()">
                         <i class="bi bi-download"></i> Export
                     </button>
+                    <button class="btn btn-outline-secondary" onclick="autoCategorizeAll()">
+                        <i class="bi bi-magic"></i> Auto-Categorize All
+                    </button>
                     <button class="btn btn-outline-danger" onclick="deleteAllTransactions()">
                         <i class="bi bi-trash"></i> Delete All
                     </button>
@@ -149,9 +152,9 @@
                                 <td>{{ transaction.date.strftime('%Y-%m-%d') }}</td>
                                 <td>{{ transaction.description }}</td>
                                 <td>
-                                    <span class="badge bg-{{ transaction.category_info.color }}">
-                                        <i class="bi {{ transaction.category_info.icon }}"></i>
-                                        {{ transaction.category_info.name }}
+                                    <span class="badge bg-primary">
+                                        <i class="bi bi-tag"></i>
+                                        {{ transaction.category }}
                                     </span>
                                 </td>
                                 <td class="{{ 'text-success' if transaction.amount > 0 else 'text-danger' }}">
@@ -467,6 +470,78 @@ function deleteAllTransactions() {
                 alert('Error deleting transactions');
             }
         });
+    }
+}
+
+async function autoCategorizeAll() {
+    if (!confirm('This will set all transaction categories to match their descriptions. Continue?')) {
+        return;
+    }
+    
+    try {
+        // Get all transactions from the table and create unique categories
+        const uniqueCategories = new Set();
+        const transactions = [];
+        
+        document.querySelectorAll('table tbody tr').forEach(row => {
+            const id = row.querySelector('button[onclick^="editTransaction"]')?.getAttribute('onclick')?.match(/'([^']+)'/)?.[1];
+            const description = row.querySelector('td:nth-child(2)')?.textContent?.trim();
+            
+            if (id && description) {
+                uniqueCategories.add(description);
+                transactions.push({ id, category: description });
+            }
+        });
+
+        // Update each transaction one by one
+        let successCount = 0;
+        let failCount = 0;
+        
+        for (const transaction of transactions) {
+            try {
+                const response = await fetch(`/api/transactions/${transaction.id}`, {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        category: transaction.category
+                    })
+                });
+
+                if (response.ok) {
+                    successCount++;
+                } else {
+                    failCount++;
+                }
+            } catch (error) {
+                console.error(`Error updating transaction ${transaction.id}:`, error);
+                failCount++;
+            }
+        }
+
+        // Show results
+        if (failCount === 0) {
+            alert(`Successfully updated ${successCount} transactions!`);
+        } else {
+            alert(`Updated ${successCount} transactions, ${failCount} failed.`);
+        }
+
+        // Update the category dropdown with new unique categories
+        const categorySelect = document.querySelector('select[name="category"]');
+        categorySelect.innerHTML = '<option value="">Select category...</option>';
+        Array.from(uniqueCategories).sort().forEach(category => {
+            const option = document.createElement('option');
+            option.value = category;
+            option.textContent = category;
+            categorySelect.appendChild(option);
+        });
+
+        // Refresh the table
+        window.location.reload();
+    } catch (error) {
+        console.error('Error:', error);
+        alert('Error auto-categorizing transactions');
     }
 }
 </script>

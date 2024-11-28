@@ -110,8 +110,12 @@ class BudgetTransaction(db.Model):
 
     @property
     def category_info(self):
-        category = TransactionCategory.get_by_name(self.category)
-        return category.value
+        # For custom categories, create a default category info
+        return {
+            'name': self.category,
+            'icon': 'bi-tag',
+            'color': 'primary'
+        }
 
     def to_dict(self):
         return {
@@ -120,7 +124,7 @@ class BudgetTransaction(db.Model):
             'amount': float(self.amount),
             'description': self.description,
             'type': self.type,
-            'category': self.category_info
+            'category': self.category
         }
 
     def __repr__(self):

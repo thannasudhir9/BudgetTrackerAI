@@ -115,102 +115,40 @@
         </div>
     </div>
 
-    <!-- Daily and Weekly Charts Row -->
-    <div class="row g-4 mb-4">
-        <!-- Daily Chart -->
-        <div class="col-md-6 mb-4">
-            <div class="card border-0 shadow-sm h-100">
-                <div class="card-body">
-                    <div class="d-flex justify-content-between align-items-center mb-4">
-                        <h5 class="card-title mb-0">Daily Overview</h5>
-                        <a href="{{ url_for('view_transactions', filter='daily') }}" class="btn btn-sm btn-outline-primary no-print">View All</a>
+    <h2 class="mb-4">Category Distribution</h2>
+
+    <div class="container mt-4">
+        <div class="row mb-4">
+            <!-- Category Distribution Chart -->
+            <div class="col-md-6">
+                <div class="card h-100">
+                    <div class="card-header">
+                        <h5 class="card-title mb-0">Category Distribution</h5>
                     </div>
-                    <div style="height: 300px; position: relative;">
-                        <canvas id="dailyChart"></canvas>
-                    </div>
-                    <!-- Daily Transactions List -->
-                    <div class="mt-4">
-                        <h6 class="mb-3">Daily Transactions</h6>
-                        <div class="table-responsive" style="max-height: 300px; overflow-y: auto;">
-                            <table class="table table-hover table-sm">
-                                <thead class="table-light">
-                                    <tr>
-                                        <th>Date</th>
-                                        <th>Description</th>
-                                        <th>Category</th>
-                                        <th>Amount</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    {% for transaction in daily_transactions %}
-                                    <tr>
-                                        <td>{{ transaction.date.strftime('%Y-%m-%d') }}</td>
-                                        <td>{{ transaction.description }}</td>
-                                        <td>
-                                            <span class="badge bg-{{ 'success' if transaction.amount > 0 else 'danger' }}">
-                                                {{ transaction.category }}
-                                            </span>
-                                        </td>
-                                        <td class="{{ 'text-success' if transaction.amount > 0 else 'text-danger' }}">
-                                            {{ '+' if transaction.amount > 0 else '-' }}<span class="currency-symbol">$</span><span data-amount="{{ transaction.amount|abs }}">{{ "%.2f"|format(transaction.amount|abs) }}</span>
-                                        </td>
-                                    </tr>
-                                    {% else %}
-                                    <tr>
-                                        <td colspan="4" class="text-center">No transactions found</td>
-                                    </tr>
-                                    {% endfor %}
-                                </tbody>
-                            </table>
-                        </div>
+                    <div class="card-body">
+                        <canvas id="categoryPieChart"></canvas>
                     </div>
                 </div>
             </div>
-        </div>
 
-        <!-- Weekly Chart -->
-        <div class="col-md-6 mb-4">
-            <div class="card border-0 shadow-sm h-100">
-                <div class="card-body">
-                    <div class="d-flex justify-content-between align-items-center mb-4">
-                        <h5 class="card-title mb-0">Weekly Overview</h5>
-                        <a href="{{ url_for('view_transactions', filter='weekly') }}" class="btn btn-sm btn-outline-primary no-print">View All</a>
+            <!-- Category Statistics -->
+            <div class="col-md-6">
+                <div class="card h-100">
+                    <div class="card-header">
+                        <h5 class="card-title mb-0">Category Statistics</h5>
                     </div>
-                    <div style="height: 300px; position: relative;">
-                        <canvas id="weeklyChart"></canvas>
-                    </div>
-                    <!-- Weekly Transactions List -->
-                    <div class="mt-4">
-                        <h6 class="mb-3">Weekly Transactions</h6>
-                        <div class="table-responsive" style="max-height: 300px; overflow-y: auto;">
-                            <table class="table table-hover table-sm">
-                                <thead class="table-light">
+                    <div class="card-body">
+                        <div class="table-responsive">
+                            <table class="table table-hover">
+                                <thead>
                                     <tr>
-                                        <th>Date</th>
-                                        <th>Description</th>
                                         <th>Category</th>
                                         <th>Amount</th>
+                                        <th>Percentage</th>
                                     </tr>
                                 </thead>
-                                <tbody>
-                                    {% for transaction in weekly_transactions %}
-                                    <tr>
-                                        <td>{{ transaction.date.strftime('%Y-%m-%d') }}</td>
-                                        <td>{{ transaction.description }}</td>
-                                        <td>
-                                            <span class="badge bg-{{ 'success' if transaction.amount > 0 else 'danger' }}">
-                                                {{ transaction.category }}
-                                            </span>
-                                        </td>
-                                        <td class="{{ 'text-success' if transaction.amount > 0 else 'text-danger' }}">
-                                            {{ '+' if transaction.amount > 0 else '-' }}<span class="currency-symbol">$</span><span data-amount="{{ transaction.amount|abs }}">{{ "%.2f"|format(transaction.amount|abs) }}</span>
-                                        </td>
-                                    </tr>
-                                    {% else %}
-                                    <tr>
-                                        <td colspan="4" class="text-center">No transactions found</td>
-                                    </tr>
-                                    {% endfor %}
+                                <tbody id="categoryStats">
+                                    <!-- Filled by JavaScript -->
                                 </tbody>
                             </table>
                         </div>
@@ -220,8 +158,115 @@
         </div>
     </div>
 
+    <h2 class="mb-4">Overview By Daily, Weekly, Monthly, Yearly</h2>
+
+    <div class="container mt-4">
+        <div class="row">
+            <!-- Daily Chart -->
+            <div class="col-md-6 mb-4">
+                <div class="card h-100">
+                    <div class="card-header">
+                        <h5 class="card-title mb-0">Daily Overview</h5>
+                    </div>
+                    <div class="card-body">
+                        <div style="height: 300px; position: relative;">
+                            <canvas id="dailyChart"></canvas>
+                        </div>
+                        <!-- Daily Transactions List -->
+                        <div class="mt-4">
+                            <h6 class="mb-3">Daily Transactions</h6>
+                            <div class="table-responsive" style="max-height: 300px; overflow-y: auto;">
+                                <table class="table table-hover table-sm">
+                                    <thead class="table-light">
+                                        <tr>
+                                            <th>Date</th>
+                                            <th>Description</th>
+                                            <th>Category</th>
+                                            <th>Amount</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {% for transaction in daily_transactions %}
+                                        <tr>
+                                            <td>{{ transaction.date.strftime('%Y-%m-%d') }}</td>
+                                            <td>{{ transaction.description }}</td>
+                                            <td>
+                                                <span class="badge bg-{{ 'success' if transaction.amount > 0 else 'danger' }}">
+                                                    {{ transaction.category }}
+                                                </span>
+                                            </td>
+                                            <td class="{{ 'text-success' if transaction.amount > 0 else 'text-danger' }}">
+                                                {{ '+' if transaction.amount > 0 else '-' }}<span class="currency-symbol">$</span><span data-amount="{{ transaction.amount|abs }}">{{ "%.2f"|format(transaction.amount|abs) }}</span>
+                                            </td>
+                                        </tr>
+                                        {% else %}
+                                        <tr>
+                                            <td colspan="4" class="text-center">No transactions found</td>
+                                        </tr>
+                                        {% endfor %}
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Weekly and Monthly Charts Row -->
+            <div class="col-md-6 mb-4">
+                <div class="card border-0 shadow-sm h-100">
+                    <div class="card-body">
+                        <div class="d-flex justify-content-between align-items-center mb-4">
+                            <h5 class="card-title mb-0">Weekly Overview</h5>
+                            <a href="{{ url_for('view_transactions', filter='weekly') }}" class="btn btn-sm btn-outline-primary no-print">View All</a>
+                        </div>
+                        <div style="height: 300px; position: relative;">
+                            <canvas id="weeklyChart"></canvas>
+                        </div>
+                        <!-- Weekly Transactions List -->
+                        <div class="mt-4">
+                            <h6 class="mb-3">Weekly Transactions</h6>
+                            <div class="table-responsive" style="max-height: 300px; overflow-y: auto;">
+                                <table class="table table-hover table-sm">
+                                    <thead class="table-light">
+                                        <tr>
+                                            <th>Date</th>
+                                            <th>Description</th>
+                                            <th>Category</th>
+                                            <th>Amount</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {% for transaction in weekly_transactions %}
+                                        <tr>
+                                            <td>{{ transaction.date.strftime('%Y-%m-%d') }}</td>
+                                            <td>{{ transaction.description }}</td>
+                                            <td>
+                                                <span class="badge bg-{{ 'success' if transaction.amount > 0 else 'danger' }}">
+                                                    {{ transaction.category }}
+                                                </span>
+                                            </td>
+                                            <td class="{{ 'text-success' if transaction.amount > 0 else 'text-danger' }}">
+                                                {{ '+' if transaction.amount > 0 else '-' }}<span class="currency-symbol">$</span><span data-amount="{{ transaction.amount|abs }}">{{ "%.2f"|format(transaction.amount|abs) }}</span>
+                                            </td>
+                                        </tr>
+                                        {% else %}
+                                        <tr>
+                                            <td colspan="4" class="text-center">No transactions found</td>
+                                        </tr>
+                                        {% endfor %}
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <!-- Monthly and Yearly Charts Row -->
-    <div class="row g-4">
+    <div class="row g-4 mb-4">
         <!-- Monthly Chart -->
         <div class="col-md-6 mb-4">
             <div class="card border-0 shadow-sm h-100">
@@ -406,50 +451,78 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     });
 
-    // Chart configuration
-    const chartConfig = {
+    // Get daily data
+    const dailyData = {{ daily_data|tojson }};
+        
+    // Prepare data for daily chart
+    const dailyLabels = dailyData.map(d => {
+        const date = new Date(d.date);
+        return date.getDate(); // Just show the day of month
+    });
+    const dailyIncomes = dailyData.map(d => d.income);
+    const dailyExpenses = dailyData.map(d => d.expenses);
+
+    // Daily Chart
+    const dailyCtx = document.getElementById('dailyChart').getContext('2d');
+    new Chart(dailyCtx, {
         type: 'bar',
+        data: {
+            labels: dailyLabels,
+            datasets: [{
+                label: 'Income',
+                data: dailyIncomes,
+                backgroundColor: 'rgba(40, 167, 69, 0.5)',
+                borderColor: 'rgb(40, 167, 69)',
+                borderWidth: 1
+            },
+            {
+                label: 'Expenses',
+                data: dailyExpenses,
+                backgroundColor: 'rgba(220, 53, 69, 0.5)',
+                borderColor: 'rgb(220, 53, 69)',
+                borderWidth: 1
+            }]
+        },
         options: {
             responsive: true,
             maintainAspectRatio: false,
             scales: {
+                x: {
+                    title: {
+                        display: true,
+                        text: 'Day of Month'
+                    },
+                    stacked: false
+                },
                 y: {
                     beginAtZero: true,
+                    title: {
+                        display: true,
+                        text: 'Amount ($)'
+                    },
                     ticks: {
                         callback: function(value) {
-                            return '$' + value;
+                            return '$' + value.toFixed(2);
                         }
                     }
                 }
             },
             plugins: {
-                legend: {
-                    position: 'top',
+                tooltip: {
+                    callbacks: {
+                        title: function(context) {
+                            const dataIndex = context[0].dataIndex;
+                            return `Day ${dailyLabels[dataIndex]}`;
+                        },
+                        label: function(context) {
+                            const value = context.raw;
+                            return `${context.dataset.label}: $${value.toFixed(2)}`;
+                        }
+                    }
                 }
             }
         }
-    };
-
-    // Daily Chart
-    const dailyCtx = document.getElementById('dailyChart').getContext('2d');
-    const dailyData = {
-        labels: {{ daily_data | map(attribute='date') | list | tojson }},
-        datasets: [{
-            label: 'Income',
-            data: {{ daily_data | map(attribute='income') | list | tojson }},
-            backgroundColor: 'rgba(40, 167, 69, 0.5)',
-            borderColor: 'rgb(40, 167, 69)',
-            borderWidth: 1
-        },
-        {
-            label: 'Expenses',
-            data: {{ daily_data | map(attribute='expenses') | list | tojson }},
-            backgroundColor: 'rgba(220, 53, 69, 0.5)',
-            borderColor: 'rgb(220, 53, 69)',
-            borderWidth: 1
-        }]
-    };
-    new Chart(dailyCtx, {...chartConfig, data: dailyData});
+    });
 
     // Weekly Chart
     const weeklyCtx = document.getElementById('weeklyChart').getContext('2d');
@@ -470,7 +543,29 @@ document.addEventListener('DOMContentLoaded', function() {
             borderWidth: 1
         }]
     };
-    new Chart(weeklyCtx, {...chartConfig, data: weeklyData});
+    new Chart(weeklyCtx, {
+        type: 'bar',
+        data: weeklyData,
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    ticks: {
+                        callback: function(value) {
+                            return '$' + value;
+                        }
+                    }
+                }
+            },
+            plugins: {
+                legend: {
+                    position: 'top',
+                }
+            }
+        }
+    });
 
     // Monthly Chart
     const monthlyCtx = document.getElementById('monthlyChart').getContext('2d');
@@ -491,7 +586,29 @@ document.addEventListener('DOMContentLoaded', function() {
             borderWidth: 1
         }]
     };
-    new Chart(monthlyCtx, {...chartConfig, data: monthlyData});
+    new Chart(monthlyCtx, {
+        type: 'bar',
+        data: monthlyData,
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    ticks: {
+                        callback: function(value) {
+                            return '$' + value;
+                        }
+                    }
+                }
+            },
+            plugins: {
+                legend: {
+                    position: 'top',
+                }
+            }
+        }
+    });
 
     // Yearly Chart
     const yearlyCtx = document.getElementById('yearlyChart').getContext('2d');
@@ -512,7 +629,112 @@ document.addEventListener('DOMContentLoaded', function() {
             borderWidth: 1
         }]
     };
-    new Chart(yearlyCtx, {...chartConfig, data: yearlyData});
+    new Chart(yearlyCtx, {
+        type: 'bar',
+        data: yearlyData,
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    ticks: {
+                        callback: function(value) {
+                            return '$' + value;
+                        }
+                    }
+                }
+            },
+            plugins: {
+                legend: {
+                    position: 'top',
+                }
+            }
+        }
+    });
+
+    // Category Pie Chart setup
+    const categoryCtx = document.getElementById('categoryPieChart').getContext('2d');
+    const categories = {{ categories|tojson }};
+    const categoryAmounts = {{ category_amounts|tojson }};
+    
+    // Generate colors for categories
+    const colors = categories.map(() => {
+        const r = Math.floor(Math.random() * 200 + 55);
+        const g = Math.floor(Math.random() * 200 + 55);
+        const b = Math.floor(Math.random() * 200 + 55);
+        return `rgba(${r}, ${g}, ${b}, 0.8)`;
+    });
+
+    // Create pie chart
+    new Chart(categoryCtx, {
+        type: 'pie',
+        data: {
+            labels: categories,
+            datasets: [{
+                data: categoryAmounts,
+                backgroundColor: colors,
+                borderColor: colors.map(color => color.replace('0.8', '1')),
+                borderWidth: 1
+            }]
+        },
+        options: {
+            responsive: true,
+            plugins: {
+                legend: {
+                    position: 'right',
+                    labels: {
+                        padding: 20,
+                        font: {
+                            size: 12
+                        }
+                    }
+                },
+                tooltip: {
+                    callbacks: {
+                        label: function(context) {
+                            const total = context.dataset.data.reduce((a, b) => a + b, 0);
+                            const value = context.raw;
+                            const percentage = ((value / total) * 100).toFixed(1);
+                            return `${context.label}: $${value.toFixed(2)} (${percentage}%)`;
+                        }
+                    }
+                }
+            }
+        }
+    });
+
+    // Populate category statistics
+    const categoryStats = document.getElementById('categoryStats');
+    const total = categoryAmounts.reduce((a, b) => a + b, 0);
+    
+    let statsHtml = '';
+    categories.forEach((category, index) => {
+        const amount = categoryAmounts[index];
+        const percentage = ((amount / total) * 100).toFixed(1);
+        statsHtml += `
+            <tr>
+                <td>
+                    <span class="badge" style="background-color: ${colors[index]}">
+                        ${category}
+                    </span>
+                </td>
+                <td>$${amount.toFixed(2)}</td>
+                <td>${percentage}%</td>
+            </tr>
+        `;
+    });
+
+    // Add total row
+    statsHtml += `
+        <tr class="table-light fw-bold">
+            <td>Total</td>
+            <td>$${total.toFixed(2)}</td>
+            <td>100%</td>
+        </tr>
+    `;
+
+    categoryStats.innerHTML = statsHtml;
 });
 
 function generatePDF() {

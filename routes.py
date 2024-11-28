@@ -62,153 +62,187 @@ def init_routes(app):
     @app.route('/dashboard')
     @login_required
     def dashboard():
-        # Get current date and calculate date ranges
-        today = datetime.now().date()
-        start_of_week = today - timedelta(days=today.weekday())
-        start_of_month = today.replace(day=1)
-        start_of_year = today.replace(month=1, day=1)
-
-        # Daily transactions (last 7 days)
-        daily_data = []
-        daily_transactions = []  # List to store daily transactions
-        
-        for i in range(6, -1, -1):
-            date = today - timedelta(days=i)
-            start_of_day = datetime.combine(date, datetime.min.time())
-            end_of_day = datetime.combine(date, datetime.max.time())
-
-            # Get transactions for this day
-            day_transactions = BudgetTransaction.query.filter(
-                BudgetTransaction.user_id == current_user.id,
-                BudgetTransaction.date.between(start_of_day, end_of_day)
-            ).order_by(BudgetTransaction.date.desc()).all()
-            daily_transactions.extend(day_transactions)
+        try:
+            # Get current date and calculate date ranges
+            today = datetime.now().date()
+            start_of_month = today.replace(day=1)
             
-            # Calculate daily totals
-            income = sum(t.amount for t in day_transactions if t.amount > 0)
-            expenses = abs(sum(t.amount for t in day_transactions if t.amount < 0))
-            
-            daily_data.append({
-                'date': date.strftime('%Y-%m-%d'),
-                'income': float(income),
-                'expenses': float(expenses)
-            })
-
-        # Weekly transactions (last 4 weeks)
-        weekly_data = []
-        weekly_transactions = []  # List to store weekly transactions
-        
-        for i in range(3, -1, -1):
-            week_end = start_of_week - timedelta(days=i*7)
-            week_start = week_end - timedelta(days=6)
-            
-            # Get transactions for this week
-            week_transactions = BudgetTransaction.query.filter(
-                BudgetTransaction.user_id == current_user.id,
-                BudgetTransaction.date.between(
-                    datetime.combine(week_start, datetime.min.time()),
-                    datetime.combine(week_end, datetime.max.time())
-                )
-            ).order_by(BudgetTransaction.date.desc()).all()
-            weekly_transactions.extend(week_transactions)
-            
-            # Calculate weekly totals
-            income = sum(t.amount for t in week_transactions if t.amount > 0)
-            expenses = abs(sum(t.amount for t in week_transactions if t.amount < 0))
-            
-            weekly_data.append({
-                'week': f"{week_start.strftime('%b %d')} - {week_end.strftime('%b %d')}",
-                'income': float(income),
-                'expenses': float(expenses)
-            })
-
-        # Monthly transactions (last 6 months)
-        monthly_data = []
-        monthly_transactions = []  # List to store monthly transactions
-        
-        for i in range(5, -1, -1):
-            month_start = (today - timedelta(days=30*i)).replace(day=1)
-            if i > 0:
-                month_end = (month_start.replace(day=28) + timedelta(days=4)).replace(day=1) - timedelta(days=1)
+            # Get number of days in current month
+            if today.month == 12:
+                next_month = today.replace(year=today.year + 1, month=1, day=1)
             else:
-                month_end = today
+                next_month = today.replace(month=today.month + 1, day=1)
+            days_in_month = (next_month - start_of_month).days
+
+            # Daily transactions (all days in current month)
+            daily_data = []
+            daily_transactions = []
+
+            for day in range(days_in_month):
+                date = start_of_month + timedelta(days=day)
+                start_of_day = datetime.combine(date, datetime.min.time())
+                end_of_day = datetime.combine(date, datetime.max.time())
+
+                # Get transactions for this day
+                day_transactions = BudgetTransaction.query.filter(
+                    BudgetTransaction.user_id == current_user.id,
+                    BudgetTransaction.date.between(start_of_day, end_of_day)
+                ).order_by(BudgetTransaction.date.desc()).all()
                 
-            # Get transactions for this month
-            month_transactions = BudgetTransaction.query.filter(
+                daily_transactions.extend(day_transactions)
+
+                # Calculate daily totals
+                income = sum(t.amount for t in day_transactions if t.amount > 0)
+                expenses = abs(sum(t.amount for t in day_transactions if t.amount < 0))
+
+                daily_data.append({
+                    'date': date.strftime('%Y-%m-%d'),
+                    'income': float(income),
+                    'expenses': float(expenses)
+                })
+
+            # Weekly transactions (last 4 weeks)
+            weekly_data = []
+            weekly_transactions = []  # List to store weekly transactions
+            
+            for i in range(3, -1, -1):
+                week_end = start_of_month - timedelta(days=i*7)
+                week_start = week_end - timedelta(days=6)
+                
+                # Get transactions for this week
+                week_transactions = BudgetTransaction.query.filter(
+                    BudgetTransaction.user_id == current_user.id,
+                    BudgetTransaction.date.between(
+                        datetime.combine(week_start, datetime.min.time()),
+                        datetime.combine(week_end, datetime.max.time())
+                    )
+                ).order_by(BudgetTransaction.date.desc()).all()
+                weekly_transactions.extend(week_transactions)
+                
+                # Calculate weekly totals
+                income = sum(t.amount for t in week_transactions if t.amount > 0)
+                expenses = abs(sum(t.amount for t in week_transactions if t.amount < 0))
+                
+                weekly_data.append({
+                    'week': f"{week_start.strftime('%b %d')} - {week_end.strftime('%b %d')}",
+                    'income': float(income),
+                    'expenses': float(expenses)
+                })
+
+            # Monthly transactions (last 6 months)
+            monthly_data = []
+            monthly_transactions = []  # List to store monthly transactions
+            
+            for i in range(5, -1, -1):
+                month_start = (today - timedelta(days=30*i)).replace(day=1)
+                if i > 0:
+                    month_end = (month_start.replace(day=28) + timedelta(days=4)).replace(day=1) - timedelta(days=1)
+                else:
+                    month_end = today
+                    
+                # Get transactions for this month
+                month_transactions = BudgetTransaction.query.filter(
+                    BudgetTransaction.user_id == current_user.id,
+                    BudgetTransaction.date.between(
+                        datetime.combine(month_start, datetime.min.time()),
+                        datetime.combine(month_end, datetime.max.time())
+                    )
+                ).order_by(BudgetTransaction.date.desc()).all()
+                monthly_transactions.extend(month_transactions)
+                
+                # Calculate monthly totals
+                income = sum(t.amount for t in month_transactions if t.amount > 0)
+                expenses = abs(sum(t.amount for t in month_transactions if t.amount < 0))
+                
+                monthly_data.append({
+                    'month': month_start.strftime('%B %Y'),
+                    'income': float(income),
+                    'expenses': float(expenses)
+                })
+
+            # Yearly transactions (last 3 years)
+            yearly_data = []
+            yearly_transactions = []  # List to store yearly transactions
+            
+            for i in range(2, -1, -1):
+                year = today.year - i
+                year_start = datetime(year, 1, 1).date()
+                year_end = datetime(year, 12, 31).date() if i > 0 else today
+                    
+                # Get transactions for this year
+                year_transactions = BudgetTransaction.query.filter(
+                    BudgetTransaction.user_id == current_user.id,
+                    BudgetTransaction.date.between(
+                        datetime.combine(year_start, datetime.min.time()),
+                        datetime.combine(year_end, datetime.max.time())
+                    )
+                ).order_by(BudgetTransaction.date.desc()).all()
+                yearly_transactions.extend(year_transactions)
+                
+                # Calculate yearly totals
+                income = sum(t.amount for t in year_transactions if t.amount > 0)
+                expenses = abs(sum(t.amount for t in year_transactions if t.amount < 0))
+                
+                yearly_data.append({
+                    'year': str(year),
+                    'income': float(income),
+                    'expenses': float(expenses)
+                })
+
+            # Get category summary
+            category_summary = db.session.query(
+                BudgetTransaction.category,
+                func.sum(BudgetTransaction.amount).label('total')
+            ).filter(
                 BudgetTransaction.user_id == current_user.id,
-                BudgetTransaction.date.between(
-                    datetime.combine(month_start, datetime.min.time()),
-                    datetime.combine(month_end, datetime.max.time())
-                )
-            ).order_by(BudgetTransaction.date.desc()).all()
-            monthly_transactions.extend(month_transactions)
-            
-            # Calculate monthly totals
-            income = sum(t.amount for t in month_transactions if t.amount > 0)
-            expenses = abs(sum(t.amount for t in month_transactions if t.amount < 0))
-            
-            monthly_data.append({
-                'month': month_start.strftime('%B %Y'),
-                'income': float(income),
-                'expenses': float(expenses)
-            })
+                BudgetTransaction.date >= start_of_month
+            ).group_by(BudgetTransaction.category).all()
 
-        # Yearly transactions (last 3 years)
-        yearly_data = []
-        yearly_transactions = []  # List to store yearly transactions
-        
-        for i in range(2, -1, -1):
-            year = today.year - i
-            year_start = datetime(year, 1, 1).date()
-            year_end = datetime(year, 12, 31).date() if i > 0 else today
+            # Get recent transactions
+            recent_transactions = BudgetTransaction.query.filter_by(
+                user_id=current_user.id
+            ).order_by(
+                desc(BudgetTransaction.date)
+            ).limit(5).all()
+
+            # Get transactions for the current month
+            today = datetime.now()
+            start_of_month = today.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
             
-            # Get transactions for this year
-            year_transactions = BudgetTransaction.query.filter(
+            transactions = BudgetTransaction.query.filter(
                 BudgetTransaction.user_id == current_user.id,
-                BudgetTransaction.date.between(
-                    datetime.combine(year_start, datetime.min.time()),
-                    datetime.combine(year_end, datetime.max.time())
-                )
-            ).order_by(BudgetTransaction.date.desc()).all()
-            yearly_transactions.extend(year_transactions)
-            
-            # Calculate yearly totals
-            income = sum(t.amount for t in year_transactions if t.amount > 0)
-            expenses = abs(sum(t.amount for t in year_transactions if t.amount < 0))
-            
-            yearly_data.append({
-                'year': str(year),
-                'income': float(income),
-                'expenses': float(expenses)
-            })
+                BudgetTransaction.date >= start_of_month
+            ).all()
 
-        # Get category summary
-        category_summary = db.session.query(
-            BudgetTransaction.category,
-            func.sum(BudgetTransaction.amount).label('total')
-        ).filter(
-            BudgetTransaction.user_id == current_user.id,
-            BudgetTransaction.date >= start_of_month
-        ).group_by(BudgetTransaction.category).all()
+            # Calculate category distribution
+            category_totals = {}
+            for transaction in transactions:
+                category = transaction.category
+                if category not in category_totals:
+                    category_totals[category] = 0
+                category_totals[category] += abs(transaction.amount)
 
-        # Get recent transactions
-        recent_transactions = BudgetTransaction.query.filter_by(
-            user_id=current_user.id
-        ).order_by(
-            desc(BudgetTransaction.date)
-        ).limit(5).all()
+            # Convert to list of categories and amounts
+            categories = list(category_totals.keys())
+            amounts = list(category_totals.values())
 
-        return render_template('dashboard.html',
-                           daily_data=daily_data,
-                           weekly_data=weekly_data,
-                           monthly_data=monthly_data,
-                           yearly_data=yearly_data,
-                           category_summary=category_summary,
-                           recent_transactions=recent_transactions,
-                           daily_transactions=daily_transactions,
-                           weekly_transactions=weekly_transactions,
-                           monthly_transactions=monthly_transactions,
-                           yearly_transactions=yearly_transactions)
+            return render_template('dashboard.html',
+                               daily_data=daily_data,
+                               weekly_data=weekly_data,
+                               monthly_data=monthly_data,
+                               yearly_data=yearly_data,
+                               category_summary=category_summary,
+                               recent_transactions=recent_transactions,
+                               daily_transactions=daily_transactions,
+                               weekly_transactions=weekly_transactions,
+                               monthly_transactions=monthly_transactions,
+                               yearly_transactions=yearly_transactions,
+                               categories=categories,
+                               category_amounts=amounts
+            )
+        except Exception as e:
+            print(f"Error in dashboard route: {str(e)}")
+            return render_template('error.html', error=str(e))
 
     # Pricing Route
     @app.route('/pricing')
@@ -422,7 +456,7 @@ The Budget Tracker Team
                 date=datetime.strptime(data['date'], '%Y-%m-%d'),
                 description=data['description'],
                 amount=float(data['amount']),
-                category=data['category'],  # This will now be the category name (e.g., 'FOOD', 'SHOPPING')
+                category=data['category'].strip(),
                 type='income' if float(data['amount']) > 0 else 'expense'
             )
             
@@ -430,8 +464,8 @@ The Budget Tracker Team
             db.session.commit()
             
             return jsonify({
-                'id': transaction.id,
-                'message': 'Transaction created successfully'
+                'message': 'Transaction created successfully',
+                'transaction': transaction.to_dict()
             }), 201
             
         except Exception as e:
@@ -443,24 +477,25 @@ The Budget Tracker Team
     @login_required
     def update_transaction(id):
         try:
-            # Find the transaction
-            transaction = BudgetTransaction.query.filter_by(
-                id=id,
-                user_id=current_user.id
-            ).first_or_404()
-            
-            # Update transaction with new data
+            transaction = BudgetTransaction.query.filter_by(id=id, user_id=current_user.id).first()
+            if not transaction:
+                return jsonify({'error': 'Transaction not found'}), 404
+
             data = request.get_json()
-            transaction.date = datetime.strptime(data['date'], '%Y-%m-%d')
-            transaction.description = data['description']
-            transaction.amount = float(data['amount'])
-            transaction.category = data['category']
+            
+            # Handle partial updates
+            if 'date' in data:
+                transaction.date = datetime.strptime(data['date'], '%Y-%m-%d')
+            if 'description' in data:
+                transaction.description = data['description']
+            if 'amount' in data:
+                transaction.amount = float(data['amount'])
+            if 'category' in data:
+                # Store category exactly as provided
+                transaction.category = data['category'].strip()
             
             db.session.commit()
-            
-            return jsonify({
-                'message': 'Transaction updated successfully'
-            }), 200
+            return jsonify({'message': 'Transaction updated successfully'}), 200
             
         except Exception as e:
             db.session.rollback()
@@ -815,3 +850,43 @@ This link will expire in 1 hour.
             flash(f'Error updating users: {str(e)}', 'danger')
         
         return redirect(url_for('users'))
+
+    @app.route('/api/transactions/auto-categorize', methods=['POST'])
+    @login_required
+    def auto_categorize_transactions():
+        try:
+            data = request.get_json()
+            transactions = data.get('transactions', [])
+            
+            # Get all unique descriptions as categories
+            unique_categories = set()
+            description_to_category = {}
+            
+            # First pass: collect all unique descriptions
+            for transaction in transactions:
+                description = transaction.get('description', '').strip()
+                if description and description not in unique_categories:
+                    unique_categories.add(description)
+                    description_to_category[description] = description
+            
+            # Update transactions with their new categories
+            for transaction_data in transactions:
+                transaction_id = transaction_data.get('id')
+                description = transaction_data.get('description', '').strip()
+                
+                if transaction_id and description:
+                    transaction = BudgetTransaction.query.filter_by(
+                        id=transaction_id,
+                        user_id=current_user.id
+                    ).first()
+                    
+                    if transaction:
+                        transaction.category = description_to_category[description]
+            
+            db.session.commit()
+            return jsonify({'message': 'Transactions auto-categorized successfully'}), 200
+            
+        except Exception as e:
+            db.session.rollback()
+            print(f"Error auto-categorizing transactions: {str(e)}")
+            return jsonify({'error': str(e)}), 400
