@@ -590,3 +590,128 @@ python app.py
    - Cleaner PDF output formatting
    
 For more details on specific features or development guidelines, refer to the documentation above.
+
+
+# Budget Tracker Application
+*Last Updated: November 29, 2024*
+
+## Overview
+A comprehensive web-based budget tracking application that helps users manage their personal finances through intuitive visualizations and detailed transaction tracking.
+
+## Features
+- **Dashboard Overview**
+  - Monthly income, expenses, and net income summary cards
+  - Category-wise distribution of income and expenses
+  - Detailed transaction history
+
+- **Financial Visualization**
+  - Separate pie charts for income and expense categories
+  - Monthly trend analysis
+  - Weekly transaction breakdown
+  - Yearly financial overview
+
+- **Transaction Management**
+  - Add, edit, and categorize transactions
+  - Multiple currency support (USD, EUR, INR)
+  - Category-based organization
+  - Date-based filtering
+
+- **Data Analysis**
+  - Category-wise statistics and percentages
+  - Time-based trend analysis (Daily, Weekly, Monthly, Yearly)
+  - Dynamic data updates
+
+## Technical Stack
+- **Backend**: Flask (Python)
+- **Frontend**: JavaScript, HTML5, CSS3
+- **Database**: SQLAlchemy
+- **Visualization**: Chart.js
+- **Styling**: Bootstrap
+- **PDF Export**: html2pdf.js
+
+## Key Components
+1. **Dashboard Interface**
+   - Real-time financial overview
+   - Interactive charts and graphs
+   - Responsive design for all devices
+
+2. **Transaction Management**
+   - Multi-currency support
+   - Category management
+   - Date-based organization
+
+3. **Data Visualization**
+   - Income/Expense pie charts
+   - Time-series analysis
+   - Category distribution
+
+4. **Export Functionality**
+   - PDF report generation
+   - Data backup options
+
+## Currency Support
+- USD (US Dollar)
+- EUR (Euro)
+- INR (Indian Rupee)
+- Dynamic currency conversion
+- Persistent currency preference
+
+## Security Features
+- User authentication
+- Secure API endpoints
+- Data validation
+- Session management
+
+## Performance Optimizations
+- Efficient data loading
+- Chart instance management
+- Responsive data updates
+- Browser storage utilization
+
+## Browser Compatibility
+- Chrome (Recommended)
+- Firefox
+- Safari
+- Edge
+
+## Future Enhancements
+1. Advanced filtering options
+2. Machine learning for category predictions
+3. Budget goal setting
+4. Mobile application
+5. More currency options
+6. Enhanced reporting features
+
+## Dependencies
+- Flask
+- SQLAlchemy
+- Chart.js
+- Bootstrap
+- html2pdf.js
+
+## Installation
+1. Clone the repository
+2. Install Python dependencies: `pip install -r requirements.txt`
+3. Set up the database
+4. Configure environment variables
+5. Run the Flask application
+
+## Usage
+1. Register/Login to your account
+2. Add transactions
+3. View financial overview
+4. Generate reports
+5. Manage categories
+6. Export data
+
+## Contributing
+Contributions are welcome! Please feel free to submit a Pull Request.
+
+## License
+This project is licensed under the MIT License - see the LICENSE file for details.
+
+## Support
+For support, please open an issue in the repository or contact the development team.
+
+---
+*Note: This README is regularly updated to reflect the latest changes and improvements to the Budget Tracker application.*
