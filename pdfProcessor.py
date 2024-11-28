@@ -1,135 +1,103 @@
+import csv
+import PyPDF2
 import pdfplumber
 import re
 from datetime import datetime
-from typing import List, Dict, Any
 
-def extract_transactions_from_pdf(pdf_path: str) -> List[Dict[str, Any]]:
-    """
-    Extract transactions from a PDF file.
-    Returns a list of dictionaries containing transaction information.
-    """
+def extract_transactions_from_pdf(pdf_path):
+    """Extracts transactions from a PDF credit card bill by parsing the text."""
     transactions = []
     
     try:
         with pdfplumber.open(pdf_path) as pdf:
+            # Iterate through all pages in the PDF
             for page in pdf.pages:
+                # Extract text from the page
                 text = page.extract_text()
-                if not text:
-                    continue
-                
-                # Split text into lines
-                lines = text.split('\n')
-                
-                for line in lines:
-                    # Skip empty lines
-                    if not line.strip():
-                        continue
+                if text:
+                    # Split the text into lines for easier processing
+                    lines = text.split('\n')
                     
-                    # Try to extract transaction information
-                    transaction = parse_transaction_line(line)
-                    if transaction:
-                        transactions.append(transaction)
-    
+                    for line in lines:
+                        
+                        # Filter lines that contain a date (DD.MM.YYYY format)
+                        if contains_date(line):
+                            #print(f'line are...',line)
+                            # Extract transaction details
+                            # Match patterns for date, description, and amount using regular expressions
+                            transaction = parse_transaction_line_nomral(line)
+                            if transaction:
+                                transactions.append(transaction)
+                        
+                       
     except Exception as e:
-        print(f"Error processing PDF: {str(e)}")
-        return []
+        print(f"Error reading PDF: {e}")
     
+    print(f'final transactions are...',transactions)
     return transactions
 
-def parse_transaction_line(line: str) -> Dict[str, Any]:
-    """
-    Parse a single line of text to extract transaction information.
-    Returns a dictionary with transaction details if successful, None otherwise.
-    """
-    try:
-        # Common date patterns
-        date_patterns = [
-            r'\d{2}/\d{2}/\d{4}',  # MM/DD/YYYY
-            r'\d{2}-\d{2}-\d{4}',  # MM-DD-YYYY
-            r'\d{4}-\d{2}-\d{2}'   # YYYY-MM-DD
-        ]
-        
-        # Amount pattern (handles negative amounts and decimals)
-        amount_pattern = r'-?\$?\d+(?:,\d{3})*(?:\.\d{2})?'
-        
-        # Try to find date
-        date_str = None
-        for pattern in date_patterns:
-            match = re.search(pattern, line)
-            if match:
-                date_str = match.group()
-                break
-        
-        if not date_str:
-            return None
-        
-        # Try to find amount
-        amount_match = re.search(amount_pattern, line)
-        if not amount_match:
-            return None
-            
-        amount_str = amount_match.group()
-        # Clean up amount string
-        amount = float(amount_str.replace('$', '').replace(',', ''))
-        
-        # Extract description (everything between date and amount)
-        description = line
-        for pattern in date_patterns:
-            description = re.sub(pattern, '', description)
-        description = re.sub(amount_pattern, '', description)
-        description = re.sub(r'\s+', ' ', description).strip()
-        
-        # Try different date formats
-        date = None
-        date_formats = [
-            '%m/%d/%Y',
-            '%m-%d-%Y',
-            '%Y-%m-%d'
-        ]
-        
-        for fmt in date_formats:
-            try:
-                date = datetime.strptime(date_str, fmt)
-                break
-            except ValueError:
-                continue
-        
-        if not date:
-            return None
-        
-        # Determine transaction type based on amount
-        transaction_type = 'income' if amount > 0 else 'expense'
-        
-        return {
-            'date': date.strftime('%Y-%m-%d'),
-            'description': description,
-            'amount': abs(amount),
-            'type': transaction_type,
-            'category': guess_transaction_category(description)  # Guess category
-        }
-        
-    except Exception as e:
-        print(f"Error parsing line: {str(e)}")
-        return None
+def contains_date(line):
+    """Check if the line contains a date in DD.MM.YYYY format."""
+    date_pattern = r"\d{2}\.\d{2}\.\d{4}"  # Date pattern (DD.MM.YYYY)
+    return bool(re.search(date_pattern, line))
 
-def guess_transaction_category(description: str) -> str:
-    """
-    Guess the transaction category based on the description.
-    Returns a category name from the TransactionCategory enum.
-    """
-    description = description.lower()
+def is_valid_date(date_str):
+    """Check if the given string is a valid date in DD.MM.YYYY format."""
+    try:
+        datetime.strptime(date_str, "%d.%m.%Y")
+        return True
+    except ValueError:
+        return False
+
+def is_invalid_line(line):
+    """Check if the line contains multiple dates or a non-transactional format."""
+    # Regex to detect multiple date patterns or date phrases (e.g., "Abrechnung vom")
+    if re.search(r"\d{2}\.\d{2}\.\d{4}.*\d{2}\.\d{2}\.\d{4}", line):  # Two dates in the line
+        return True
+    if "Abrechnung vom" in line or "Rechnung vom" in line or "Mindestbetrag" in line or "Karteninhabers" in line or "Fällig" in line or "5.000,00EUR" in line or "NEUER" in line:  # Date phrases or other non-transactional formats
+        return True
+    return False
+
+def parse_transaction_line_nomral(line):
+    """Parse a single line of text to extract date, description, place, and amount."""
+    # Split the line into parts
+    parts = line.strip().split(' ')
     
-    # Define category keywords
-    categories = {
-        'FOOD': ['restaurant', 'cafe', 'food', 'grocery', 'meal', 'lunch', 'dinner', 'breakfast'],
-        'TRANSPORTATION': ['uber', 'lyft', 'taxi', 'gas', 'fuel', 'parking', 'transit', 'train', 'bus'],
-        'ENTERTAINMENT': ['movie', 'theatre', 'concert', 'netflix', 'spotify', 'game', 'entertainment'],
-        'SHOPPING': ['amazon', 'walmart', 'target', 'store', 'shop', 'mall'],
-        'BILLS': ['bill', 'utility', 'electric', 'water', 'rent', 'insurance', 'phone', 'internet'],
-        'SALARY': ['salary', 'payroll', 'payment', 'deposit'],
-        'OTHER_INCOME': ['refund', 'return', 'credit', 'interest']
+    # Check if the first part is a valid date (DD.MM.YYYY format)
+    if not is_valid_date(parts[0]) or is_invalid_line(line):
+        return None  # If not a valid date or invalid line (e.g., Abrechnung), ignore this line
+    
+
+    # First part is the date (assumed to be in DD.MM.YYYY format)
+    date = parts[0]
+    
+    # Try to find where the amount is located (the last part of the line)
+    amount_str = parts[-1]
+    
+    # Convert the amount to a float (handle commas)
+    amount = float(amount_str.replace(',', '.'))
+    
+    # The place is usually just before the amount
+    place = parts[-2]
+
+    # The description is everything between the date and the place
+    description = ' '.join(parts[1:-2])
+    
+    return {
+        'Date': date,
+        'Description': description.strip(),
+        'Category': place.strip(),
+        'Amount': amount
     }
     
+    
+    # Check each category's keywords
+    for category, keywords in categories.items():
+        if any(keyword in description for keyword in keywords):
+            return category
+    
+    return 'UNCATEGORIZED'
+
     # Check each category's keywords
     for category, keywords in categories.items():
         if any(keyword in description for keyword in keywords):

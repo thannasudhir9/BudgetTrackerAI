@@ -8,10 +8,13 @@ import csv
 import io
 from enum import Enum
 from models import User, BudgetTransaction, UserRole, TransactionCategory
-from extensions import db
+from extensions import db, mail
 from sqlalchemy import desc
 import secrets
 from flask_mail import Message
+from pdfProcessor import extract_transactions_from_pdf
+import os
+from werkzeug.utils import secure_filename
 
 def init_routes(app):
     # Home Route
@@ -487,31 +490,68 @@ The Budget Tracker Team
         if file.filename == '':
             return jsonify({'error': 'No file selected'}), 400
         
-        if not file.filename.endswith('.csv'):
-            return jsonify({'error': 'File must be a CSV'}), 400
+        # Check file extension
+        file_ext = os.path.splitext(file.filename)[1].lower()
+        if file_ext not in ['.csv', '.pdf']:
+            return jsonify({'error': 'File must be a CSV or PDF'}), 400
         
         try:
-            # Read CSV file
-            stream = io.StringIO(file.stream.read().decode("UTF8"), newline=None)
-            csv_reader = csv.DictReader(stream)
+            transactions_data = []
             
-            for row in csv_reader:
-                # Create transaction from CSV row
-                transaction = BudgetTransaction(
-                    user_id=current_user.id,
-                    date=datetime.strptime(row['Date'], '%Y-%m-%d'),
-                    description=row['Description'],
-                    amount=float(row['Amount']),
-                    category=row['Category'],
-                    type='income' if float(row['Amount']) > 0 else 'expense'
-                )
-                db.session.add(transaction)
+            if file_ext == '.csv':
+                # Handle CSV file
+                stream = io.StringIO(file.stream.read().decode("UTF8"), newline=None)
+                csv_reader = csv.DictReader(stream)
+                transactions_data = list(csv_reader)
+            else:
+                # Handle PDF file
+                # Save the uploaded file temporarily
+                temp_path = os.path.join('temp', secure_filename(file.filename))
+                os.makedirs('temp', exist_ok=True)
+                file.save(temp_path)
+                
+                try:
+                    # Extract transactions from PDF
+                    transactions_data = extract_transactions_from_pdf(temp_path)
+                finally:
+                    # Clean up the temporary file
+                    if os.path.exists(temp_path):
+                        os.remove(temp_path)
+            
+            # Process transactions
+            for row in transactions_data:
+                try:
+                    # Handle date format from PDF (DD.MM.YYYY) or CSV (YYYY-MM-DD)
+                    date_str = row.get('Date', row.get('date', ''))
+                    if '.' in date_str:  # PDF format
+                        date = datetime.strptime(date_str, '%d.%m.%Y')
+                    else:  # CSV format
+                        date = datetime.strptime(date_str, '%Y-%m-%d')
+                    
+                    # Get amount and ensure it's a float
+                    amount_str = str(row.get('Amount', row.get('amount', '0')))
+                    amount = float(amount_str.replace('€', '').replace(',', '.').strip())
+                    
+                    # Create transaction
+                    transaction = BudgetTransaction(
+                        user_id=current_user.id,
+                        date=date,
+                        description=row.get('Description', row.get('description', '')).strip(),
+                        amount=amount,
+                        category=row.get('Category', row.get('category', 'UNCATEGORIZED')).strip(),
+                        type='income' if amount > 0 else 'expense'
+                    )
+                    db.session.add(transaction)
+                except (ValueError, KeyError) as e:
+                    print(f"Error processing transaction: {str(e)}")
+                    continue
             
             db.session.commit()
             return jsonify({'message': 'Transactions imported successfully'}), 200
             
         except Exception as e:
             db.session.rollback()
+            print(f"Error importing transactions: {str(e)}")
             return jsonify({'error': str(e)}), 400
 
     @app.route('/api/transactions/export')
