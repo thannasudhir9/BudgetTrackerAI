@@ -3,28 +3,88 @@
 {% block content %}
 <div class="container-fluid px-0">
     <!-- Hero Section -->
-    <div class="bg-primary text-white py-5">
+    <div class="{% if current_user.is_authenticated %}bg-light{% else %}bg-primary text-white{% endif %} py-5">
         <div class="container">
             <div class="row align-items-center">
                 <div class="col-lg-6">
+                    {% if current_user.is_authenticated %}
+                    <h1 class="display-4 fw-bold mb-4">Welcome back, {{ current_user.username }}!</h1>
+                    <p class="lead mb-4">Here's a quick overview of your financial status:</p>
+                    <div class="row g-4 mb-4">
+                        <!-- Quick Stats Cards -->
+                        <div class="col-md-6">
+                            <div class="card border-0 shadow-sm">
+                                <div class="card-body">
+                                    <h5 class="card-title text-muted mb-1">Today's Balance</h5>
+                                    <h3 class="mb-0">
+                                        <span class="currency-symbol">$</span><span data-amount="{{ today_balance }}">{{ "%.2f"|format(today_balance|abs) }}</span>
+                                    </h3>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="card border-0 shadow-sm">
+                                <div class="card-body">
+                                    <h5 class="card-title text-muted mb-1">This Month</h5>
+                                    <h3 class="mb-0">
+                                        <span class="currency-symbol">$</span><span data-amount="{{ month_balance }}">{{ "%.2f"|format(month_balance|abs) }}</span>
+                                    </h3>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="d-flex gap-3">
+                        <a href="{{ url_for('dashboard') }}" class="btn btn-primary btn-lg">
+                            <i class="bi bi-speedometer2"></i> Full Dashboard
+                        </a>
+                        <a href="{{ url_for('view_transactions') }}" class="btn btn-outline-primary btn-sm no-print">
+                            <i class="bi bi-list"></i> View Transactions
+                        </a>
+                    </div>
+                    {% else %}
                     <h1 class="display-4 fw-bold mb-4">Take Control of Your Finances</h1>
                     <p class="lead mb-4">Track your expenses, monitor your income, and achieve your financial goals with our intuitive budget tracking solution.</p>
-                    {% if not current_user.is_authenticated %}
                     <div class="d-flex gap-3">
                         <a href="{{ url_for('register') }}" class="btn btn-light btn-lg">Get Started</a>
                         <a href="{{ url_for('login') }}" class="btn btn-outline-light btn-lg">Login</a>
                     </div>
-                    {% else %}
-                    <a href="{{ url_for('dashboard') }}" class="btn btn-light btn-lg">Go to Dashboard</a>
                     {% endif %}
                 </div>
                 <div class="col-lg-6">
+                    {% if current_user.is_authenticated %}
+                    <div class="card border-0 shadow-sm">
+                        <div class="card-body">
+                            <h5 class="card-title mb-4">Recent Activity</h5>
+                            {% if recent_transactions %}
+                            <div class="table-responsive">
+                                <table class="table table-hover">
+                                    <tbody>
+                                        {% for transaction in recent_transactions %}
+                                        <tr>
+                                            <td>{{ transaction.date.strftime('%b %d') }}</td>
+                                            <td>{{ transaction.description }}</td>
+                                            <td class="{{ 'text-success' if transaction.amount > 0 else 'text-danger' }} text-end">
+                                                {{ '+' if transaction.amount > 0 else '-' }}<span class="currency-symbol">$</span><span data-amount="{{ transaction.amount|abs }}">{{ "%.2f"|format(transaction.amount|abs) }}</span>
+                                            </td>
+                                        </tr>
+                                        {% endfor %}
+                                    </tbody>
+                                </table>
+                            </div>
+                            {% else %}
+                            <p class="text-muted text-center mb-0">No recent transactions</p>
+                            {% endif %}
+                        </div>
+                    </div>
+                    {% else %}
                     <img src="{{ url_for('static', filename='img/hero-image.svg') }}" alt="Budget Tracking" class="img-fluid">
+                    {% endif %}
                 </div>
             </div>
         </div>
     </div>
 
+    {% if not current_user.is_authenticated %}
     <!-- Features Section -->
     <div class="container py-5">
         <h2 class="text-center mb-5">Why Choose Our Budget Tracker?</h2>
@@ -51,8 +111,8 @@
                 <div class="card h-100 border-0 shadow-sm">
                     <div class="card-body text-center">
                         <i class="bi bi-shield-check text-primary display-4 mb-3"></i>
-                        <h3 class="card-title h5">Secure & Private</h3>
-                        <p class="card-text">Your financial data is encrypted and secure. We never share your personal information with third parties.</p>
+                        <h3 class="card-title h4">Secure & Private</h3>
+                        <p class="card-text">Your financial data is encrypted and stored securely. Your privacy is our priority.</p>
                     </div>
                 </div>
             </div>
@@ -66,57 +126,89 @@
             <div class="row g-4">
                 <div class="col-md-3">
                     <div class="text-center">
-                        <div class="bg-primary text-white rounded-circle d-inline-flex align-items-center justify-content-center mb-3" style="width: 60px; height: 60px;">
-                            <h3 class="mb-0">1</h3>
-                        </div>
+                        <div class="bg-primary text-white rounded-circle d-inline-flex align-items-center justify-content-center mb-3" style="width: 60px; height: 60px;">1</div>
                         <h4>Sign Up</h4>
-                        <p>Create your free account in minutes</p>
+                        <p>Create your free account in seconds</p>
                     </div>
                 </div>
                 <div class="col-md-3">
                     <div class="text-center">
-                        <div class="bg-primary text-white rounded-circle d-inline-flex align-items-center justify-content-center mb-3" style="width: 60px; height: 60px;">
-                            <h3 class="mb-0">2</h3>
-                        </div>
+                        <div class="bg-primary text-white rounded-circle d-inline-flex align-items-center justify-content-center mb-3" style="width: 60px; height: 60px;">2</div>
                         <h4>Add Transactions</h4>
                         <p>Record your income and expenses</p>
                     </div>
                 </div>
                 <div class="col-md-3">
                     <div class="text-center">
-                        <div class="bg-primary text-white rounded-circle d-inline-flex align-items-center justify-content-center mb-3" style="width: 60px; height: 60px;">
-                            <h3 class="mb-0">3</h3>
-                        </div>
-                        <h4>Categorize</h4>
-                        <p>Organize transactions by category</p>
+                        <div class="bg-primary text-white rounded-circle d-inline-flex align-items-center justify-content-center mb-3" style="width: 60px; height: 60px;">3</div>
+                        <h4>Track Progress</h4>
+                        <p>Monitor your financial health</p>
                     </div>
                 </div>
                 <div class="col-md-3">
                     <div class="text-center">
-                        <div class="bg-primary text-white rounded-circle d-inline-flex align-items-center justify-content-center mb-3" style="width: 60px; height: 60px;">
-                            <h3 class="mb-0">4</h3>
-                        </div>
-                        <h4>Track Progress</h4>
-                        <p>Monitor your financial goals</p>
+                        <div class="bg-primary text-white rounded-circle d-inline-flex align-items-center justify-content-center mb-3" style="width: 60px; height: 60px;">4</div>
+                        <h4>Gain Insights</h4>
+                        <p>Make informed financial decisions</p>
                     </div>
                 </div>
             </div>
         </div>
     </div>
-
-    <!-- Call to Action -->
-    <div class="container py-5">
-        <div class="row justify-content-center">
-            <div class="col-md-8 text-center">
-                <h2 class="mb-4">Ready to Start Managing Your Finances?</h2>
-                <p class="lead mb-4">Join thousands of users who are already taking control of their financial future.</p>
-                {% if not current_user.is_authenticated %}
-                <a href="{{ url_for('register') }}" class="btn btn-primary btn-lg">Create Free Account</a>
-                {% else %}
-                <a href="{{ url_for('dashboard') }}" class="btn btn-primary btn-lg">Go to Dashboard</a>
-                {% endif %}
-            </div>
-        </div>
-    </div>
+    {% endif %}
 </div>
+
+{% block extra_js %}
+{% if current_user.is_authenticated %}
+<script>
+// Currency conversion rates (you might want to fetch these from an API in production)
+const conversionRates = {
+    USD: 1,
+    EUR: 0.92, // 1 USD = 0.92 EUR
+    INR: 82.92 // 1 USD = 82.92 INR
+};
+
+const currencySymbols = {
+    USD: '$',
+    EUR: '€',
+    INR: '₹'
+};
+
+function updateCurrencyDisplay(currency) {
+    const symbols = document.querySelectorAll('.currency-symbol');
+    const amounts = document.querySelectorAll('[data-amount]');
+    const rate = conversionRates[currency];
+    const symbol = currencySymbols[currency];
+
+    // Update currency symbols
+    symbols.forEach(el => {
+        el.textContent = symbol;
+    });
+
+    // Update amounts
+    amounts.forEach(el => {
+        const originalAmount = parseFloat(el.getAttribute('data-amount'));
+        const convertedAmount = (originalAmount * rate).toFixed(2);
+        const formattedAmount = new Intl.NumberFormat('en-US', {
+            minimumFractionDigits: 2,
+            maximumFractionDigits: 2
+        }).format(Math.abs(convertedAmount));
+        el.textContent = formattedAmount;
+    });
+
+    // Save preference to localStorage
+    localStorage.setItem('preferredCurrency', currency);
+}
+
+document.addEventListener('DOMContentLoaded', function() {
+    // Initialize currency selector with saved preference
+    const savedCurrency = localStorage.getItem('preferredCurrency') || 'USD';
+    if (document.getElementById('currencySelector')) {
+        document.getElementById('currencySelector').value = savedCurrency;
+        updateCurrencyDisplay(savedCurrency);
+    }
+});
+</script>
+{% endif %}
+{% endblock %}
 {% endblock %}

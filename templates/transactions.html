@@ -121,7 +121,7 @@
                 <div class="col-md-3">
                     <label class="form-label">Category</label>
                     <select class="form-select" name="category" onchange="applyFilters()">
-                        <option value="all">All Categories</option>
+                        <option value="">Select category...</option>
                         {% for category in categories %}
                         <option value="{{ category.name }}">{{ category.name }}</option>
                         {% endfor %}
@@ -149,8 +149,9 @@
                                 <td>{{ transaction.date.strftime('%Y-%m-%d') }}</td>
                                 <td>{{ transaction.description }}</td>
                                 <td>
-                                    <span class="badge bg-{{ 'success' if transaction.amount > 0 else 'danger' }}">
-                                        {{ transaction.category }}
+                                    <span class="badge bg-{{ transaction.category_info.color }}">
+                                        <i class="bi {{ transaction.category_info.icon }}"></i>
+                                        {{ transaction.category_info.name }}
                                     </span>
                                 </td>
                                 <td class="{{ 'text-success' if transaction.amount > 0 else 'text-danger' }}">
@@ -231,7 +232,7 @@
             </div>
             <div class="modal-footer">
                 <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                <button type="button" class="btn btn-primary" onclick="saveTransaction()">Save Transaction</button>
+                <button type="button" class="btn btn-primary" onclick="event.preventDefault(); saveTransaction()">Save Transaction</button>
             </div>
         </div>
     </div>
@@ -367,14 +368,23 @@ function saveTransaction() {
     const form = modal.querySelector('form');
     const formData = new FormData(form);
     const transactionId = formData.get('transactionId');
+    const type = formData.get('type');
+    const rawAmount = parseFloat(formData.get('amount'));
     
+    if (isNaN(rawAmount)) {
+        alert('Please enter a valid amount');
+        return;
+    }
+
     // Convert form data to JSON
     const data = {
         date: formData.get('date'),
         description: formData.get('description'),
-        amount: parseFloat(formData.get('amount')) * (formData.get('type') === 'expense' ? -1 : 1),
+        amount: type === 'expense' ? -Math.abs(rawAmount) : Math.abs(rawAmount),
         category: formData.get('category')
     };
+
+    console.log('Sending transaction data:', data);
 
     // Determine if this is a new transaction or an edit
     const url = transactionId ? `/api/transactions/${transactionId}` : '/api/transactions';
@@ -390,18 +400,22 @@ function saveTransaction() {
     })
     .then(response => {
         if (!response.ok) {
-            throw new Error('Failed to save transaction');
+            return response.json().then(err => {
+                console.error('Server error response:', err);
+                throw new Error(err.error || 'Failed to save transaction');
+            });
         }
         return response.json();
     })
-    .then(() => {
+    .then(result => {
+        console.log('Transaction saved successfully:', result);
         // Close the modal and refresh the page
         bootstrap.Modal.getInstance(modal).hide();
         window.location.reload();
     })
     .catch(error => {
         console.error('Error saving transaction:', error);
-        alert('Error saving transaction. Please try again.');
+        alert('Error saving transaction: ' + error.message);
     });
 }
 

@@ -12,6 +12,47 @@ from extensions import db
 from sqlalchemy import desc
 
 def init_routes(app):
+    # Home Route
+    @app.route('/')
+    def home():
+        if current_user.is_authenticated:
+            # Get today's balance
+            today_start = datetime.combine(datetime.now().date(), datetime.min.time())
+            today_end = datetime.combine(datetime.now().date(), datetime.max.time())
+            today_transactions = BudgetTransaction.query.filter(
+                BudgetTransaction.user_id == current_user.id,
+                BudgetTransaction.date.between(today_start, today_end)
+            ).all()
+            today_balance = sum(t.amount for t in today_transactions)
+
+            # Get this month's balance
+            month_start = datetime.now().replace(day=1, hour=0, minute=0, second=0, microsecond=0)
+            month_end = datetime.now()
+            month_transactions = BudgetTransaction.query.filter(
+                BudgetTransaction.user_id == current_user.id,
+                BudgetTransaction.date.between(month_start, month_end)
+            ).all()
+            month_balance = sum(t.amount for t in month_transactions)
+
+            # Get total balance (all time)
+            all_transactions = BudgetTransaction.query.filter_by(
+                user_id=current_user.id
+            ).all()
+            total_balance = sum(t.amount for t in all_transactions)
+
+            # Get recent transactions (last 5)
+            recent_transactions = BudgetTransaction.query.filter_by(
+                user_id=current_user.id
+            ).order_by(BudgetTransaction.date.desc()).limit(5).all()
+
+            return render_template('home.html', 
+                today_balance=today_balance,
+                month_balance=month_balance,
+                total_balance=total_balance,  # Added this line
+                recent_transactions=recent_transactions
+            )
+        return render_template('home.html')
+
     # Dashboard Route
     @app.route('/dashboard')
     @login_required
@@ -163,13 +204,6 @@ def init_routes(app):
                            weekly_transactions=weekly_transactions,
                            monthly_transactions=monthly_transactions,
                            yearly_transactions=yearly_transactions)
-
-    # Home Route
-    @app.route('/')
-    def home():
-        if current_user.is_authenticated:
-            return redirect(url_for('dashboard'))
-        return render_template('home.html')
 
     # Pricing Route
     @app.route('/pricing')
@@ -331,7 +365,8 @@ def init_routes(app):
                 date=datetime.strptime(data['date'], '%Y-%m-%d'),
                 description=data['description'],
                 amount=float(data['amount']),
-                category=data['category']
+                category=data['category'],  # This will now be the category name (e.g., 'FOOD', 'SHOPPING')
+                type='income' if float(data['amount']) > 0 else 'expense'
             )
             
             db.session.add(transaction)
@@ -344,6 +379,7 @@ def init_routes(app):
             
         except Exception as e:
             db.session.rollback()
+            print(f"Error creating transaction: {str(e)}")  # Add debug logging
             return jsonify({'error': str(e)}), 400
 
     @app.route('/api/transactions/<int:id>', methods=['PUT'])

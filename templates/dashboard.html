@@ -23,10 +23,20 @@
 <div class="container py-4" id="dashboard-content">
     <div class="d-flex justify-content-between align-items-center mb-4">
         <h2 class="mb-0">Dashboard</h2>
-        <div class="no-print">
-            <button class="btn btn-outline-primary" onclick="generatePDF()">
-                <i class="bi bi-file-pdf"></i> Download PDF
-            </button>
+        <div class="d-flex align-items-center gap-3">
+            <div class="d-flex align-items-center gap-2">
+                <select id="currencySelector" class="form-select form-select-sm no-print" style="width: auto;">
+                    <option value="USD" selected>USD ($)</option>
+                    <option value="EUR">EUR (€)</option>
+                    <option value="INR">INR (₹)</option>
+                </select>
+                <span id="conversionRateDisplay" class="text-muted small no-print"></span>
+            </div>
+            <div class="no-print">
+                <button class="btn btn-outline-primary" onclick="generatePDF()">
+                    <i class="bi bi-file-pdf"></i> Download PDF
+                </button>
+            </div>
         </div>
     </div>
 
@@ -56,7 +66,7 @@
                                         </span>
                                     </td>
                                     <td class="text-end {{ 'text-success' if category.total > 0 else 'text-danger' }}">
-                                        ${{ '{:,.2f}'.format(category.total|abs) }}
+                                        <span class="currency-symbol">$</span><span data-amount="{{ category.total|abs }}">{{ '{:,.2f}'.format(category.total|abs) }}</span>
                                     </td>
                                 </tr>
                                 {% endfor %}
@@ -93,7 +103,7 @@
                                         <span class="badge bg-secondary">{{ transaction.category }}</span>
                                     </td>
                                     <td class="text-end {{ 'text-success' if transaction.amount > 0 else 'text-danger' }}">
-                                        ${{ '{:,.2f}'.format(transaction.amount|abs) }}
+                                        <span class="currency-symbol">$</span><span data-amount="{{ transaction.amount|abs }}">{{ '{:,.2f}'.format(transaction.amount|abs) }}</span>
                                     </td>
                                 </tr>
                                 {% endfor %}
@@ -142,7 +152,7 @@
                                             </span>
                                         </td>
                                         <td class="{{ 'text-success' if transaction.amount > 0 else 'text-danger' }}">
-                                            {{ '+' if transaction.amount > 0 else '-' }}${{ "%.2f"|format(transaction.amount|abs) }}
+                                            {{ '+' if transaction.amount > 0 else '-' }}<span class="currency-symbol">$</span><span data-amount="{{ transaction.amount|abs }}">{{ "%.2f"|format(transaction.amount|abs) }}</span>
                                         </td>
                                     </tr>
                                     {% else %}
@@ -193,7 +203,7 @@
                                             </span>
                                         </td>
                                         <td class="{{ 'text-success' if transaction.amount > 0 else 'text-danger' }}">
-                                            {{ '+' if transaction.amount > 0 else '-' }}${{ "%.2f"|format(transaction.amount|abs) }}
+                                            {{ '+' if transaction.amount > 0 else '-' }}<span class="currency-symbol">$</span><span data-amount="{{ transaction.amount|abs }}">{{ "%.2f"|format(transaction.amount|abs) }}</span>
                                         </td>
                                     </tr>
                                     {% else %}
@@ -247,7 +257,7 @@
                                             </span>
                                         </td>
                                         <td class="{{ 'text-success' if transaction.amount > 0 else 'text-danger' }}">
-                                            {{ '+' if transaction.amount > 0 else '-' }}${{ "%.2f"|format(transaction.amount|abs) }}
+                                            {{ '+' if transaction.amount > 0 else '-' }}<span class="currency-symbol">$</span><span data-amount="{{ transaction.amount|abs }}">{{ "%.2f"|format(transaction.amount|abs) }}</span>
                                         </td>
                                     </tr>
                                     {% else %}
@@ -298,7 +308,7 @@
                                             </span>
                                         </td>
                                         <td class="{{ 'text-success' if transaction.amount > 0 else 'text-danger' }}">
-                                            {{ '+' if transaction.amount > 0 else '-' }}${{ "%.2f"|format(transaction.amount|abs) }}
+                                            {{ '+' if transaction.amount > 0 else '-' }}<span class="currency-symbol">$</span><span data-amount="{{ transaction.amount|abs }}">{{ "%.2f"|format(transaction.amount|abs) }}</span>
                                         </td>
                                     </tr>
                                     {% else %}
@@ -321,39 +331,81 @@
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
 <script>
-function generatePDF() {
-    const element = document.getElementById('dashboard-content');
-    const today = new Date();
-    const dateStr = today.getFullYear() + 
-                   String(today.getMonth() + 1).padStart(2, '0') + 
-                   String(today.getDate()).padStart(2, '0');
-    
-    const opt = {
-        margin: 0.5,
-        filename: `BudgetTracker_${dateStr}.pdf`,
-        image: { type: 'jpeg', quality: 1 },
-        html2canvas: { 
-            scale: 2,
-            useCORS: true,
-            logging: true,
-            removeContainer: true
-        },
-        jsPDF: { 
-            unit: 'in',
-            orientation: 'portrait'
-        }
-    };
-    
-    // Add a class to the body during PDF generation
-    document.body.classList.add('generating-pdf');
-    
-    html2pdf().set(opt).from(element).save().then(() => {
-        // Remove the class after PDF generation
-        document.body.classList.remove('generating-pdf');
+// Currency conversion rates (you might want to fetch these from an API in production)
+const conversionRates = {
+    USD: 1,
+    EUR: 0.92, // 1 USD = 0.92 EUR
+    INR: 82.92 // 1 USD = 82.92 INR
+};
+
+const currencySymbols = {
+    USD: '$',
+    EUR: '€',
+    INR: '₹'
+};
+
+function updateCurrencyDisplay(currency) {
+    const symbols = document.querySelectorAll('.currency-symbol');
+    const amounts = document.querySelectorAll('[data-amount]');
+    const rate = conversionRates[currency];
+    const symbol = currencySymbols[currency];
+
+    // Update currency symbols
+    symbols.forEach(el => {
+        el.textContent = symbol;
     });
+
+    // Update amounts
+    amounts.forEach(el => {
+        const originalAmount = parseFloat(el.getAttribute('data-amount'));
+        const convertedAmount = (originalAmount * rate).toFixed(2);
+        const formattedAmount = new Intl.NumberFormat('en-US', {
+            minimumFractionDigits: 2,
+            maximumFractionDigits: 2
+        }).format(Math.abs(convertedAmount));
+        el.textContent = formattedAmount;
+    });
+
+    // Update conversion rate display
+    const rateDisplay = document.getElementById('conversionRateDisplay');
+    if (currency === 'USD') {
+        rateDisplay.textContent = '';
+    } else {
+        rateDisplay.textContent = `1 USD = ${rate} ${currency}`;
+    }
+
+    // Save preference to localStorage
+    localStorage.setItem('preferredCurrency', currency);
 }
 
 document.addEventListener('DOMContentLoaded', function() {
+    // Initialize currency selector with saved preference
+    const savedCurrency = localStorage.getItem('preferredCurrency') || 'USD';
+    document.getElementById('currencySelector').value = savedCurrency;
+    updateCurrencyDisplay(savedCurrency);
+
+    // Add event listener for currency selection
+    document.getElementById('currencySelector').addEventListener('change', function(e) {
+        updateCurrencyDisplay(e.target.value);
+    });
+
+    // Add data-amount attributes to all amount elements that don't have them yet
+    document.querySelectorAll('.text-end:not(:has(th))').forEach(el => {
+        if (!el.querySelector('[data-amount]')) {
+            const amountText = el.textContent.trim().replace(/[$,]/g, '');
+            const amount = parseFloat(amountText);
+            if (!isNaN(amount)) {
+                const span = document.createElement('span');
+                span.setAttribute('data-amount', amount);
+                span.textContent = new Intl.NumberFormat('en-US', {
+                    minimumFractionDigits: 2,
+                    maximumFractionDigits: 2
+                }).format(Math.abs(amount));
+                el.innerHTML = `<span class="currency-symbol">$</span>${span.outerHTML}`;
+            }
+        }
+    });
+
     // Chart configuration
     const chartConfig = {
         type: 'bar',
@@ -462,5 +514,37 @@ document.addEventListener('DOMContentLoaded', function() {
     };
     new Chart(yearlyCtx, {...chartConfig, data: yearlyData});
 });
+
+function generatePDF() {
+    const element = document.getElementById('dashboard-content');
+    const today = new Date();
+    const dateStr = today.getFullYear() + 
+                   String(today.getMonth() + 1).padStart(2, '0') + 
+                   String(today.getDate()).padStart(2, '0');
+    
+    const opt = {
+        margin: 0.5,
+        filename: `BudgetTracker_${dateStr}.pdf`,
+        image: { type: 'jpeg', quality: 1 },
+        html2canvas: { 
+            scale: 2,
+            useCORS: true,
+            logging: true,
+            removeContainer: true
+        },
+        jsPDF: { 
+            unit: 'in',
+            orientation: 'portrait'
+        }
+    };
+    
+    // Add a class to the body during PDF generation
+    document.body.classList.add('generating-pdf');
+    
+    html2pdf().set(opt).from(element).save().then(() => {
+        // Remove the class after PDF generation
+        document.body.classList.remove('generating-pdf');
+    });
+}
 </script>
 {% endblock %}
