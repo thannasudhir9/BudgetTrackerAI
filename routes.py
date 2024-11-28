@@ -1001,44 +1001,87 @@ This link will expire in 1 hour.
         except Exception as e:
             return jsonify({'error': str(e)}), 500
 
-    @app.route('/api/monthly-transactions/<int:year>/<int:month>')
+    @app.route('/api/monthly-overview/<int:year>/<int:start_month>/<int:end_month>')
     @login_required
-    def get_monthly_transactions(year, month):
+    def get_monthly_overview(year, start_month, end_month):
         try:
-            # Calculate start and end dates for the month
-            start_date = datetime(year, month, 1)
-            if month == 12:
+            # Calculate start and end dates
+            start_date = datetime(year, start_month, 1)
+            if end_month == 12:
                 end_date = datetime(year + 1, 1, 1)
             else:
-                end_date = datetime(year, month + 1, 1)
+                end_date = datetime(year, end_month + 1, 1)
 
-            # Get all transactions for the month
+            # Get all transactions for the date range
             transactions = BudgetTransaction.query.filter(
                 BudgetTransaction.user_id == current_user.id,
                 BudgetTransaction.date >= start_date,
                 BudgetTransaction.date < end_date
-            ).order_by(BudgetTransaction.date.desc()).all()
+            ).order_by(BudgetTransaction.date).all()
 
-            # Convert transactions to JSON-serializable format
-            transactions_data = []
-            for transaction in transactions:
-                # Get category color (you may need to adjust this based on your category color implementation)
-                category_color = generate_category_color(transaction.category)
-                
-                transactions_data.append({
-                    'date': transaction.date.strftime('%Y-%m-%d'),
-                    'description': transaction.description,
-                    'category': transaction.category,
-                    'category_color': category_color,
-                    'amount': float(transaction.amount)
+            # Initialize monthly data
+            monthly_data = []
+            for month in range(start_month, end_month + 1):
+                monthly_data.append({
+                    'month': datetime(2000, month, 1).strftime('%B'),
+                    'income': 0,
+                    'expenses': 0,
+                    'categories': {}
                 })
 
-            return jsonify(transactions_data)
+            # Calculate totals
+            total_income = 0
+            total_expenses = 0
+            category_totals = {}
+
+            for transaction in transactions:
+                month_idx = transaction.date.month - start_month
+                amount = float(transaction.amount)
+                
+                # Update monthly totals
+                if amount > 0:
+                    monthly_data[month_idx]['income'] += amount
+                    total_income += amount
+                else:
+                    abs_amount = abs(amount)
+                    monthly_data[month_idx]['expenses'] += abs_amount
+                    total_expenses += abs_amount
+
+                # Update category totals
+                category = transaction.category
+                if amount < 0:  # Only track categories for expenses
+                    if category not in category_totals:
+                        category_totals[category] = 0
+                    category_totals[category] += abs_amount
+                    
+                    # Update monthly category data
+                    if category not in monthly_data[month_idx]['categories']:
+                        monthly_data[month_idx]['categories'][category] = 0
+                    monthly_data[month_idx]['categories'][category] += abs_amount
+
+            # Generate consistent colors for categories
+            category_colors = {
+                category: generate_color_for_category(category)
+                for category in category_totals.keys()
+            }
+
+            return jsonify({
+                'monthly_data': monthly_data,
+                'summary': {
+                    'total_income': total_income,
+                    'total_expenses': total_expenses,
+                    'net': total_income - total_expenses
+                },
+                'category_data': {
+                    'totals': category_totals,
+                    'colors': category_colors
+                }
+            })
 
         except Exception as e:
             return jsonify({'error': str(e)}), 500
 
-    def generate_category_color(category_name):
+    def generate_color_for_category(category_name):
         """Generate a consistent color for a category."""
         # Use a hash of the category name to generate a consistent hue
         hash_value = sum(ord(c) for c in category_name)
@@ -1072,7 +1115,7 @@ This link will expire in 1 hour.
             # Convert transactions to JSON-serializable format
             transactions_data = []
             for transaction in transactions:
-                category_color = generate_category_color(transaction.category)
+                category_color = generate_color_for_category(transaction.category)
                 
                 transactions_data.append({
                     'date': transaction.date.strftime('%Y-%m-%d'),
@@ -1122,7 +1165,7 @@ This link will expire in 1 hour.
             # Convert transactions to JSON-serializable format
             transactions_data = []
             for transaction in transactions:
-                category_color = generate_category_color(transaction.category)
+                category_color = generate_color_for_category(transaction.category)
                 
                 transactions_data.append({
                     'date': transaction.date.strftime('%Y-%m-%d'),
@@ -1134,5 +1177,56 @@ This link will expire in 1 hour.
             
             return jsonify(transactions_data)
         
+        except Exception as e:
+            return jsonify({'error': str(e)}), 500
+
+    @app.route('/api/yearly-overview/<int:start_year>/<int:end_year>')
+    @login_required
+    def get_yearly_overview(start_year, end_year):
+        try:
+            # Calculate start and end dates
+            start_date = datetime(start_year, 1, 1)
+            end_date = datetime(end_year + 1, 1, 1)
+
+            # Get all transactions for the year range
+            transactions = BudgetTransaction.query.filter(
+                BudgetTransaction.user_id == current_user.id,
+                BudgetTransaction.date >= start_date,
+                BudgetTransaction.date < end_date
+            ).order_by(BudgetTransaction.date).all()
+
+            # Initialize yearly data
+            yearly_data = []
+            for year in range(start_year, end_year + 1):
+                yearly_data.append({
+                    'year': year,
+                    'income': 0,
+                    'expenses': 0
+                })
+
+            # Calculate yearly totals
+            total_income = 0
+            total_expenses = 0
+
+            for transaction in transactions:
+                year_idx = transaction.date.year - start_year
+                if transaction.amount > 0:
+                    yearly_data[year_idx]['income'] += float(transaction.amount)
+                    total_income += float(transaction.amount)
+                else:
+                    yearly_data[year_idx]['expenses'] += abs(float(transaction.amount))
+                    total_expenses += abs(float(transaction.amount))
+
+            return jsonify({
+                'yearly_data': yearly_data,
+                'summary': {
+                    'total_income': total_income,
+                    'total_expenses': total_expenses,
+                    'net': total_income - total_expenses,
+                    'start_year': start_year,
+                    'end_year': end_year
+                }
+            })
+
         except Exception as e:
             return jsonify({'error': str(e)}), 500
