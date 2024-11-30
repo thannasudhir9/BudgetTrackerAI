@@ -281,7 +281,12 @@
                 <div class="card-body">
                     <div class="d-flex justify-content-between align-items-center mb-4">
                         <h5 class="card-title mb-0">Monthly Overview</h5>
-                        <a href="{{ url_for('view_transactions', filter='monthly') }}" class="btn btn-sm btn-outline-primary no-print">View All</a>
+                        <div class="d-flex gap-2">
+                            <select id="monthlyOverviewYearSelect" class="form-select form-select-sm" style="width: auto;">
+                                <!-- Will be populated by JavaScript -->
+                            </select>
+                            <a href="{{ url_for('view_transactions', filter='monthly') }}" class="btn btn-sm btn-outline-primary no-print">View All</a>
+                        </div>
                     </div>
                     <div style="height: 300px; position: relative;">
                         <canvas id="monthlyChart"></canvas>
@@ -534,8 +539,8 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // Initialize year select options
     const yearSelect = document.getElementById('yearSelect');
-    const currentYear = new Date().getFullYear();
-    for (let year = currentYear; year >= currentYear - 5; year--) {
+    const currentYearSel = new Date().getFullYear();
+    for (let year = currentYearSel; year >= currentYearSel - 5; year--) {
         const option = document.createElement('option');
         option.value = year;
         option.textContent = year;
@@ -545,7 +550,7 @@ document.addEventListener('DOMContentLoaded', function() {
     // Set current month and year in selects
     const currentMonth = new Date().getMonth() + 1; // JavaScript months are 0-based
     document.getElementById('monthSelect').value = currentMonth;
-    document.getElementById('yearSelect').value = currentYear;
+    document.getElementById('yearSelect').value = currentYearSel;
 
     // Function to fetch and update daily data
     async function updateDailyChart(month, year) {
@@ -622,20 +627,20 @@ document.addEventListener('DOMContentLoaded', function() {
     });
 
     // Initial load of transactions
-    updateDailyTransactions(currentMonth, currentYear);
+    updateDailyTransactions(currentMonth, currentYearSel);
 
     // Initialize year select options for both daily and weekly views
     function initYearSelect(selectId) {
         const yearSelect = document.getElementById(selectId);
-        const currentYear = new Date().getFullYear();
+        const currentYearSel = new Date().getFullYear();
         yearSelect.innerHTML = ''; // Clear existing options
-        for (let year = currentYear; year >= currentYear - 5; year--) {
+        for (let year = currentYearSel; year >= currentYearSel - 5; year--) {
             const option = document.createElement('option');
             option.value = year;
             option.textContent = year;
             yearSelect.appendChild(option);
         }
-        yearSelect.value = currentYear;
+        yearSelect.value = currentYearSel;
     }
 
     // Initialize year selects
@@ -765,7 +770,7 @@ document.addEventListener('DOMContentLoaded', function() {
     });
 
     // Initialize week options for current month and year
-    updateWeekOptions(currentMonth, currentYear);
+    updateWeekOptions(currentMonth, currentYearSel);
 
     // Weekly Chart
     const weeklyCtx = document.getElementById('weeklyChart').getContext('2d');
@@ -1002,6 +1007,46 @@ document.addEventListener('DOMContentLoaded', function() {
     const initialMonth = parseInt(document.getElementById('weekMonthSelect').value);
     const initialYear = parseInt(document.getElementById('weekYearSelect').value);
     updateWeeklyTransactions(initialYear, initialMonth, initialWeek);
+
+    // Monthly Overview Year Selection
+    const monthlyOverviewYearSelect = document.getElementById('monthlyOverviewYearSelect');
+    //const currentYearSel = new Date().getFullYear();
+    
+    // Populate year options (current year and 5 years back)
+    for (let year = currentYearSel; year >= currentYearSel - 5; year--) {
+        const option = document.createElement('option');
+        option.value = year;
+        option.textContent = year;
+        monthlyOverviewYearSelect.appendChild(option);
+    }
+
+    // Function to update monthly overview
+    async function updateMonthlyOverview(year) {
+        try {
+            const response = await fetch(`/api/monthly-overview-by-year/${year}`);
+            if (!response.ok) throw new Error('Failed to fetch monthly overview');
+            const data = await response.json();
+            
+            // Update the monthly chart
+            const monthlyChart = Chart.getChart('monthlyChart');
+            if (monthlyChart) {
+                monthlyChart.data.labels = data.monthly_data.map(d => d.month);
+                monthlyChart.data.datasets[0].data = data.monthly_data.map(d => d.income);
+                monthlyChart.data.datasets[1].data = data.monthly_data.map(d => d.expenses);
+                monthlyChart.update();
+            }
+        } catch (error) {
+            console.error('Error updating monthly overview:', error);
+        }
+    }
+
+    // Add event listener for year selection
+    monthlyOverviewYearSelect.addEventListener('change', function() {
+        updateMonthlyOverview(this.value);
+    });
+
+    // Initial load with current year
+    updateMonthlyOverview(currentYearSel);
 });
 
 function generatePDF() {

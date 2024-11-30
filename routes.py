@@ -157,11 +157,11 @@ def init_routes(app):
                     'expenses': float(expenses)
                 })
 
-            # Monthly transactions (all 12 months of current year)
+            # Monthly transactions (current year)
+            current_year = today.year
             monthly_data = []
             monthly_transactions = []  # List to store monthly transactions
             
-            current_year = today.year
             for month in range(1, 13):
                 month_start = datetime(current_year, month, 1)
                 if month == 12:
@@ -184,7 +184,7 @@ def init_routes(app):
                 expenses = abs(sum(t.amount for t in month_transactions if t.amount < 0))
                 
                 monthly_data.append({
-                    'month': month_start.strftime('%B %Y'),
+                    'month': month_start.strftime('%B'),  # Only month name since we're in current year view
                     'income': float(income),
                     'expenses': float(expenses)
                 })
@@ -1030,81 +1030,41 @@ This link will expire in 1 hour.
         except Exception as e:
             return jsonify({'error': str(e)}), 500
 
-    @app.route('/api/monthly-overview/<int:year>/<int:start_month>/<int:end_month>')
+    @app.route('/api/monthly-overview-by-year/<int:year>')
     @login_required
-    def get_monthly_overview(year, start_month, end_month):
+    def get_monthly_overview_by_year(year):
         try:
-            # Calculate start and end dates
-            start_date = datetime(year, start_month, 1)
-            if end_month == 12:
-                end_date = datetime(year + 1, 1, 1)
-            else:
-                end_date = datetime(year, end_month + 1, 1)
-
-            # Get all transactions for the date range
-            transactions = BudgetTransaction.query.filter(
-                BudgetTransaction.user_id == current_user.id,
-                BudgetTransaction.date >= start_date,
-                BudgetTransaction.date < end_date
-            ).order_by(BudgetTransaction.date).all()
-
-            # Initialize monthly data
             monthly_data = []
-            for month in range(start_month, end_month + 1):
+            
+            # Get transactions for all months in the selected year
+            for month in range(1, 13):
+                month_start = datetime(year, month, 1)
+                if month == 12:
+                    month_end = datetime(year + 1, 1, 1) - timedelta(days=1)
+                else:
+                    month_end = datetime(year, month + 1, 1) - timedelta(days=1)
+                    
+                # Get transactions for this month
+                month_transactions = BudgetTransaction.query.filter(
+                    BudgetTransaction.user_id == current_user.id,
+                    BudgetTransaction.date.between(
+                        datetime.combine(month_start, datetime.min.time()),
+                        datetime.combine(month_end, datetime.max.time())
+                    )
+                ).order_by(BudgetTransaction.date.desc()).all()
+                
+                # Calculate monthly totals
+                income = sum(t.amount for t in month_transactions if t.amount > 0)
+                expenses = abs(sum(t.amount for t in month_transactions if t.amount < 0))
+                
                 monthly_data.append({
-                    'month': datetime(2000, month, 1).strftime('%B'),
-                    'income': 0,
-                    'expenses': 0,
-                    'categories': {}
+                    'month': month_start.strftime('%B'),  # Only month name, year is known from selection
+                    'income': float(income),
+                    'expenses': float(expenses)
                 })
 
-            # Calculate totals
-            total_income = 0
-            total_expenses = 0
-            category_totals = {}
-
-            for transaction in transactions:
-                month_idx = transaction.date.month - start_month
-                amount = float(transaction.amount)
-                
-                # Update monthly totals
-                if amount > 0:
-                    monthly_data[month_idx]['income'] += amount
-                    total_income += amount
-                else:
-                    abs_amount = abs(amount)
-                    monthly_data[month_idx]['expenses'] += abs_amount
-                    total_expenses += abs_amount
-
-                # Update category totals
-                category = transaction.category
-                if amount < 0:  # Only track categories for expenses
-                    if category not in category_totals:
-                        category_totals[category] = 0
-                    category_totals[category] += abs_amount
-                    
-                    # Update monthly category data
-                    if category not in monthly_data[month_idx]['categories']:
-                        monthly_data[month_idx]['categories'][category] = 0
-                    monthly_data[month_idx]['categories'][category] += abs_amount
-
-            # Generate consistent colors for categories
-            category_colors = {
-                category: generate_color_for_category(category)
-                for category in category_totals.keys()
-            }
-
             return jsonify({
-                'monthly_data': monthly_data,
-                'summary': {
-                    'total_income': total_income,
-                    'total_expenses': total_expenses,
-                    'net': total_income - total_expenses
-                },
-                'category_data': {
-                    'totals': category_totals,
-                    'colors': category_colors
-                }
+                'monthly_data': monthly_data
             })
 
         except Exception as e:
