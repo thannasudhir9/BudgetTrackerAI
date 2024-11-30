@@ -6,10 +6,23 @@ from flask_mail import Message
 import secrets
 from datetime import datetime, timedelta
 from werkzeug.security import generate_password_hash
+import csv
+from io import StringIO
+from functools import wraps
+
+def admin_required(f):
+    @wraps(f)
+    def decorated_function(*args, **kws):
+        if current_user.role not in [UserRole.ADMIN, UserRole.SUPER_ADMIN]:
+            flash('Access denied. Admin privileges required.', 'danger')
+            return redirect(url_for('dashboard'))
+        return f(*args, **kws)
+    return decorated_function
 
 def init_user_routes(app):
     @app.route('/admin/users')
     @login_required
+    @admin_required
     def admin_users():
         # Check if user is admin or super admin
         if current_user.role not in [UserRole.ADMIN, UserRole.SUPER_ADMIN]:
@@ -18,7 +31,8 @@ def init_user_routes(app):
             
         # Get all users
         users = User.query.order_by(User.id.desc()).all()
-        return render_template('admin/users.html', users=users)
+        feedbacks = Feedback.query.order_by(Feedback.created_at.desc()).all()
+        return render_template('admin/users.html', users=users, feedbacks=feedbacks)
 
     @app.route('/api/admin/users', methods=['POST'])
     @login_required
@@ -342,3 +356,135 @@ Submitted at: {feedback.created_at}
             db.session.rollback()
             app.logger.error(f"Error submitting feedback: {str(e)}")
             return jsonify({'error': 'An error occurred processing your request'}), 500
+
+    @app.route('/admin/feedback/<int:id>')
+    @login_required
+    @admin_required
+    def get_feedback(id):
+        feedback = Feedback.query.get_or_404(id)
+        return jsonify(feedback.to_dict())
+
+    @app.route('/admin/feedback/<int:id>/toggle-read', methods=['POST'])
+    @login_required
+    @admin_required
+    def toggle_feedback_read(id):
+        feedback = Feedback.query.get_or_404(id)
+        try:
+            feedback.is_read = not feedback.is_read
+            feedback.read_at = datetime.utcnow() if feedback.is_read else None
+            db.session.commit()
+            return jsonify({
+                'success': True,
+                'is_read': feedback.is_read,
+                'read_at': feedback.read_at.strftime('%Y-%m-%d %H:%M') if feedback.read_at else None
+            })
+        except Exception as e:
+            db.session.rollback()
+            return jsonify({'success': False, 'error': str(e)})
+
+    @app.route('/admin/feedback/<int:id>', methods=['DELETE'])
+    @login_required
+    @admin_required
+    def delete_feedback(id):
+        feedback = Feedback.query.get_or_404(id)
+        try:
+            db.session.delete(feedback)
+            db.session.commit()
+            return jsonify({'success': True})
+        except Exception as e:
+            db.session.rollback()
+            return jsonify({'success': False, 'error': str(e)})
+
+    @app.route('/admin/feedback/export')
+    @login_required
+    @admin_required
+    def export_feedback():
+        format = request.args.get('format', 'csv')
+        if format == 'csv':
+            si = StringIO()
+            cw = csv.writer(si)
+            cw.writerow(['Date', 'Name', 'Email', 'Subject', 'Message', 'User'])
+        
+            feedbacks = Feedback.query.order_by(Feedback.created_at.desc()).all()
+            for feedback in feedbacks:
+                cw.writerow([
+                    feedback.created_at.strftime('%Y-%m-%d %H:%M'),
+                    feedback.name,
+                    feedback.email,
+                    feedback.subject,
+                    feedback.message,
+                    feedback.user.username if feedback.user else 'Guest'
+                ])
+        
+            output = make_response(si.getvalue())
+            output.headers["Content-Disposition"] = "attachment; filename=feedback_export.csv"
+            output.headers["Content-type"] = "text/csv"
+            return output
+    
+        return jsonify({'error': 'Unsupported format'}), 400
+
+    @app.route('/admin/feedback/filter')
+    @login_required
+    @admin_required
+    def filter_feedback():
+        # Get filter parameters
+        status = request.args.get('status')  # 'read', 'unread', or None
+        date_from = request.args.get('date_from')
+        date_to = request.args.get('date_to')
+        search = request.args.get('search')
+
+        # Start with base query
+        query = Feedback.query
+
+        # Apply filters
+        if status == 'read':
+            query = query.filter(Feedback.is_read == True)
+        elif status == 'unread':
+            query = query.filter(Feedback.is_read == False)
+
+        if date_from:
+            try:
+                date_from = datetime.strptime(date_from, '%Y-%m-%d')
+                query = query.filter(Feedback.created_at >= date_from)
+            except ValueError:
+                pass
+
+        if date_to:
+            try:
+                date_to = datetime.strptime(date_to, '%Y-%m-%d')
+                date_to = date_to + timedelta(days=1)  # Include the entire day
+                query = query.filter(Feedback.created_at < date_to)
+            except ValueError:
+                pass
+
+        if search:
+            search = f"%{search}%"
+            query = query.filter(
+                db.or_(
+                    Feedback.name.ilike(search),
+                    Feedback.email.ilike(search),
+                    Feedback.subject.ilike(search),
+                    Feedback.message.ilike(search)
+                )
+            )
+
+        # Get results ordered by creation date
+        feedbacks = query.order_by(Feedback.created_at.desc()).all()
+
+        # Convert to list of dictionaries for JSON response
+        feedback_list = [{
+            'id': f.id,
+            'name': f.name,
+            'email': f.email,
+            'subject': f.subject,
+            'message': f.message,
+            'created_at': f.created_at.strftime('%Y-%m-%d %H:%M'),
+            'is_read': f.is_read,
+            'read_at': f.read_at.strftime('%Y-%m-%d %H:%M') if f.read_at else None,
+            'user': f.user.username if f.user else 'Guest'
+        } for f in feedbacks]
+
+        return jsonify({
+            'success': True,
+            'feedbacks': feedback_list
+        })

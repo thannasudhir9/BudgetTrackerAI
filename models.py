@@ -53,7 +53,7 @@ class User(UserMixin, db.Model):
     reset_token_expires = db.Column(db.DateTime)
     # Relationships
     transactions = db.relationship('BudgetTransaction', backref='user', lazy=True)
-    feedback_submissions = db.relationship('Feedback', backref='user', lazy=True)
+    feedback_submissions = db.relationship('Feedback', backref=db.backref('submitted_by', lazy=True), lazy=True)
     
     def __init__(self, username, email, role=UserRole.NORMAL):
         self.username = username
@@ -141,3 +141,21 @@ class Feedback(db.Model):
     message = db.Column(db.Text, nullable=False)
     user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=True)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    is_read = db.Column(db.Boolean, default=False, nullable=False)
+    read_at = db.Column(db.DateTime, nullable=True)
+
+    def __repr__(self):
+        return f'<Feedback {self.id} from {self.name}>'
+
+    def to_dict(self):
+        return {
+            'id': self.id,
+            'name': self.name,
+            'email': self.email,
+            'subject': self.subject,
+            'message': self.message,
+            'created_at': self.created_at.strftime('%Y-%m-%d %H:%M'),
+            'is_read': self.is_read,
+            'read_at': self.read_at.strftime('%Y-%m-%d %H:%M') if self.read_at else None,
+            'user': self.submitted_by.username if self.submitted_by else 'Guest'
+        }
