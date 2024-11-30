@@ -45,6 +45,7 @@ class User(UserMixin, db.Model):
     password_hash = db.Column(db.String(128))
     role = db.Column(db.Enum(UserRole), default=UserRole.NORMAL)
     is_active = db.Column(db.Boolean, default=True, nullable=False)
+    trial_end_date = db.Column(db.DateTime, nullable=True)
     created_at = db.Column(db.DateTime, nullable=False, default=datetime.utcnow)
     updated_at = db.Column(db.DateTime, onupdate=datetime.utcnow)
     last_login = db.Column(db.DateTime)

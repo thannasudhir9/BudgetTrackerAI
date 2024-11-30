@@ -8,108 +8,154 @@ from datetime import datetime, timedelta
 from werkzeug.security import generate_password_hash
 
 def init_user_routes(app):
-    @app.route('/users')
+    @app.route('/admin/users')
     @login_required
-    def users():
-        if not current_user.role == UserRole.ADMIN:
+    def admin_users():
+        # Check if user is admin or super admin
+        if current_user.role not in [UserRole.ADMIN, UserRole.SUPER_ADMIN]:
             flash('Access denied. Admin privileges required.', 'danger')
             return redirect(url_for('dashboard'))
-        users = User.query.all()
-        return render_template('users.html', users=users)
+            
+        # Get all users
+        users = User.query.order_by(User.id.desc()).all()
+        return render_template('admin/users.html', users=users)
 
-    @app.route('/api/users/<int:user_id>')
+    @app.route('/api/admin/users', methods=['POST'])
+    @login_required
+    def create_user():
+        if current_user.role not in [UserRole.ADMIN, UserRole.SUPER_ADMIN]:
+            return jsonify({'error': 'Unauthorized'}), 403
+            
+        try:
+            data = request.get_json()
+            
+            # Validate required fields
+            if not all(key in data for key in ['username', 'email', 'password', 'role']):
+                return jsonify({'error': 'Missing required fields'}), 400
+                
+            # Check if email already exists
+            if User.query.filter_by(email=data['email']).first():
+                return jsonify({'error': 'Email already registered'}), 400
+                
+            # Create new user
+            user = User(
+                username=data['username'],
+                email=data['email'],
+                role=UserRole[data['role']]
+            )
+            user.set_password(data['password'])
+            
+            db.session.add(user)
+            db.session.commit()
+            
+            return jsonify({'message': 'User created successfully'}), 201
+            
+        except Exception as e:
+            db.session.rollback()
+            return jsonify({'error': str(e)}), 400
+
+    @app.route('/api/admin/users/<int:user_id>', methods=['GET'])
     @login_required
     def get_user(user_id):
-        if not current_user.role == UserRole.ADMIN:
-            return jsonify({'error': 'Access denied'}), 403
+        if current_user.role not in [UserRole.ADMIN, UserRole.SUPER_ADMIN]:
+            return jsonify({'error': 'Unauthorized'}), 403
+            
         user = User.query.get_or_404(user_id)
         return jsonify({
             'id': user.id,
             'username': user.username,
             'email': user.email,
-            'role': user.role.value,
+            'role': user.role.name,
             'is_active': user.is_active
         })
 
-    @app.route('/api/users/<int:user_id>', methods=['PUT'])
+    @app.route('/api/admin/users/<int:user_id>', methods=['PUT'])
     @login_required
     def update_user(user_id):
-        if not current_user.role == UserRole.ADMIN:
-            return jsonify({'error': 'Access denied'}), 403
-        
-        user = User.query.get_or_404(user_id)
-        data = request.get_json()
+        if current_user.role not in [UserRole.ADMIN, UserRole.SUPER_ADMIN]:
+            return jsonify({'error': 'Unauthorized'}), 403
+            
+        try:
+            user = User.query.get_or_404(user_id)
+            data = request.get_json()
+            
+            # Update fields
+            if 'username' in data:
+                user.username = data['username']
+            if 'email' in data:
+                user.email = data['email']
+            if 'password' in data:
+                user.set_password(data['password'])
+            if 'role' in data:
+                user.role = UserRole[data['role']]
+                
+            db.session.commit()
+            return jsonify({'message': 'User updated successfully'})
+            
+        except Exception as e:
+            db.session.rollback()
+            return jsonify({'error': str(e)}), 400
 
-        # Only super_admin can modify admin and super_admin users
-        if not current_user.role == UserRole.SUPER_ADMIN and user.role in [UserRole.ADMIN, UserRole.SUPER_ADMIN]:
-            return jsonify({'error': 'Cannot modify admin users'}), 403
-
-        # Prevent self-deactivation
-        if user.id == current_user.id and not data.get('is_active', True):
-            return jsonify({'error': 'Cannot deactivate your own account'}), 400
-
-        user.username = data.get('username', user.username)
-        user.email = data.get('email', user.email)
-        
-        # Only super_admin can assign admin roles
-        if current_user.role == UserRole.SUPER_ADMIN:
-            user.role = UserRole(data.get('role', user.role.value))
-        elif data.get('role') in ['admin', 'super_admin']:
-            return jsonify({'error': 'Cannot assign admin roles'}), 403
-        else:
-            user.role = UserRole(data.get('role', user.role.value))
-
-        user.is_active = data.get('is_active', user.is_active)
-        
-        db.session.commit()
-        return jsonify({'message': 'User updated successfully'})
-
-    @app.route('/api/users/<int:user_id>/toggle-status', methods=['POST'])
+    @app.route('/api/admin/users/<int:user_id>', methods=['DELETE'])
     @login_required
-    def toggle_user_status(user_id):
-        if not current_user.role == UserRole.ADMIN:
-            return jsonify({'error': 'Access denied'}), 403
-        
-        user = User.query.get_or_404(user_id)
-        data = request.get_json()
+    def delete_user(user_id):
+        if current_user.role not in [UserRole.ADMIN, UserRole.SUPER_ADMIN]:
+            return jsonify({'error': 'Unauthorized'}), 403
+            
+        try:
+            user = User.query.get_or_404(user_id)
+            
+            # Don't allow deleting yourself
+            if user.id == current_user.id:
+                return jsonify({'error': 'Cannot delete your own account'}), 400
+                
+            db.session.delete(user)
+            db.session.commit()
+            
+            return jsonify({'message': 'User deleted successfully'})
+            
+        except Exception as e:
+            db.session.rollback()
+            return jsonify({'error': str(e)}), 400
 
-        # Only super_admin can modify admin and super_admin users
-        if not current_user.role == UserRole.SUPER_ADMIN and user.role in [UserRole.ADMIN, UserRole.SUPER_ADMIN]:
-            return jsonify({'error': 'Cannot modify admin users'}), 403
-
-        # Prevent self-deactivation
-        if user.id == current_user.id:
-            return jsonify({'error': 'Cannot toggle your own account status'}), 400
-
-        user.is_active = data.get('is_active', not user.is_active)
-        db.session.commit()
-        return jsonify({'message': 'User status updated successfully'})
-
-    @app.route('/api/users', methods=['POST'])
+    @app.route('/api/admin/users/<int:user_id>/activate', methods=['POST'])
     @login_required
-    def create_user():
-        if not current_user.role == UserRole.ADMIN:
-            return jsonify({'error': 'Access denied'}), 403
-        
-        data = request.get_json()
-        
-        # Validate role assignment
-        role = data.get('role', 'normal')
-        if not current_user.role == UserRole.SUPER_ADMIN and role in ['admin', 'super_admin']:
-            return jsonify({'error': 'Cannot create admin users'}), 403
+    def activate_user(user_id):
+        if current_user.role not in [UserRole.ADMIN, UserRole.SUPER_ADMIN]:
+            return jsonify({'error': 'Unauthorized'}), 403
+            
+        try:
+            user = User.query.get_or_404(user_id)
+            user.is_active = True
+            db.session.commit()
+            
+            return jsonify({'message': 'User activated successfully'})
+            
+        except Exception as e:
+            db.session.rollback()
+            return jsonify({'error': str(e)}), 400
 
-        user = User(
-            username=data['username'],
-            email=data['email'],
-            role=UserRole(role),
-            is_active=data.get('is_active', True)
-        )
-        user.set_password(data['password'])
-        
-        db.session.add(user)
-        db.session.commit()
-        
-        return jsonify({'message': 'User created successfully'})
+    @app.route('/api/admin/users/<int:user_id>/deactivate', methods=['POST'])
+    @login_required
+    def deactivate_user(user_id):
+        if current_user.role not in [UserRole.ADMIN, UserRole.SUPER_ADMIN]:
+            return jsonify({'error': 'Unauthorized'}), 403
+            
+        try:
+            user = User.query.get_or_404(user_id)
+            
+            # Don't allow deactivating yourself
+            if user.id == current_user.id:
+                return jsonify({'error': 'Cannot deactivate your own account'}), 400
+                
+            user.is_active = False
+            db.session.commit()
+            
+            return jsonify({'message': 'User deactivated successfully'})
+            
+        except Exception as e:
+            db.session.rollback()
+            return jsonify({'error': str(e)}), 400
 
     @app.route('/reset_password_request', methods=['GET', 'POST'])
     def reset_password_request():
@@ -179,3 +225,20 @@ If you did not make this request then simply ignore this email and no changes wi
             return redirect(url_for('login'))
             
         return render_template('reset_password.html')
+
+    @app.route('/start-pro-trial', methods=['GET'])
+    @login_required
+    def start_pro_trial():
+        if current_user.role != UserRole.NORMAL:
+            flash('You are already on a premium plan!', 'info')
+            return redirect(url_for('dashboard'))
+
+        # Set trial expiration date to 14 days from now
+        trial_end_date = datetime.utcnow() + timedelta(days=14)
+        current_user.trial_end_date = trial_end_date
+        current_user.role = UserRole.PRO
+        
+        db.session.commit()
+        
+        flash('Welcome to Pro! Your 14-day free trial has started.', 'success')
+        return redirect(url_for('dashboard'))

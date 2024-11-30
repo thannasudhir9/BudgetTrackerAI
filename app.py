@@ -32,7 +32,7 @@ def create_app():
     login_manager.login_view = 'login'
     
     # Initialize Flask-Migrate
-    #migrate = Migrate(app, db)
+    migrate = Migrate(app, db)
     
     # Import and register routes
     from routes import init_routes

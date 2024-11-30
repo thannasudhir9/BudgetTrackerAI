@@ -43,7 +43,10 @@ def generate_color_for_category(category_name):
 
 def init_routes(app):
     # Make generate_color_for_category available in templates
-    app.jinja_env.globals.update(generate_color_for_category=generate_color_for_category)
+    app.jinja_env.globals.update(
+        generate_color_for_category=generate_color_for_category,
+        UserRole=UserRole
+    )
 
     # Home Route
     @app.route('/')
