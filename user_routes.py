@@ -76,25 +76,32 @@ def init_user_routes(app):
             return jsonify({'error': 'Unauthorized'}), 403
             
         try:
-            user = User.query.get_or_404(user_id)
             data = request.get_json()
+            user = User.query.get_or_404(user_id)
+            
+            # Prevent self-modification for non-super-admin
+            if user.id == current_user.id and current_user.role != UserRole.SUPER_ADMIN:
+                return jsonify({'error': 'Cannot modify your own account'}), 403
             
             # Update fields
             if 'username' in data:
                 user.username = data['username']
             if 'email' in data:
                 user.email = data['email']
-            if 'password' in data:
-                user.set_password(data['password'])
             if 'role' in data:
-                user.role = UserRole[data['role']]
-                
+                try:
+                    user.role = UserRole[data['role']]
+                except KeyError:
+                    return jsonify({'error': 'Invalid role'}), 400
+            if 'is_active' in data:
+                user.is_active = data['is_active']
+            
             db.session.commit()
             return jsonify({'message': 'User updated successfully'})
             
         except Exception as e:
             db.session.rollback()
-            return jsonify({'error': str(e)}), 400
+            return jsonify({'error': str(e)}), 500
 
     @app.route('/api/admin/users/<int:user_id>', methods=['DELETE'])
     @login_required
@@ -156,6 +163,37 @@ def init_user_routes(app):
         except Exception as e:
             db.session.rollback()
             return jsonify({'error': str(e)}), 400
+
+    @app.route('/api/admin/users/<int:user_id>/role', methods=['PUT'])
+    @login_required
+    def update_user_role(user_id):
+        if current_user.role not in [UserRole.ADMIN, UserRole.SUPER_ADMIN]:
+            return jsonify({'error': 'Unauthorized'}), 403
+            
+        try:
+            data = request.get_json()
+            if 'role' not in data:
+                return jsonify({'error': 'Role is required'}), 400
+                
+            user = User.query.get_or_404(user_id)
+            
+            # Prevent self-role change
+            if user.id == current_user.id:
+                return jsonify({'error': 'Cannot change your own role'}), 403
+                
+            try:
+                new_role = UserRole[data['role']]
+            except KeyError:
+                return jsonify({'error': 'Invalid role'}), 400
+                
+            user.role = new_role
+            db.session.commit()
+            
+            return jsonify({'message': 'User role updated successfully'})
+            
+        except Exception as e:
+            db.session.rollback()
+            return jsonify({'error': str(e)}), 500
 
     @app.route('/reset_password_request', methods=['GET', 'POST'])
     def reset_password_request():
