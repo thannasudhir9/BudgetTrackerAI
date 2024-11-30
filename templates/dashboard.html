@@ -984,7 +984,20 @@ document.addEventListener('DOMContentLoaded', function() {
     const categoryTypes = {{ category_types|tojson }};
     
     // Use green for income and red for expenses
-    const colors = categoryTypes.map(type => type === 'income' ? '#4CAF50' : '#FF5252');
+    const colors = [
+        '#4CAF50',  // Green
+        '#F44336',  // Red
+        '#2196F3',  // Blue
+        '#FFC107',  // Amber
+        '#9C27B0',  // Purple
+        '#FF5722',  // Deep Orange
+        '#00BCD4',  // Cyan
+        '#795548',  // Brown
+        '#3F51B5',  // Indigo
+        '#E91E63',  // Pink
+        '#009688',  // Teal
+        '#673AB7'   // Deep Purple
+    ];
 
     // Create pie chart
     new Chart(categoryCtx, {
@@ -994,8 +1007,8 @@ document.addEventListener('DOMContentLoaded', function() {
             datasets: [{
                 data: categoryAmounts,
                 backgroundColor: colors,
-                borderColor: colors,
-                borderWidth: 1
+                borderColor: '#ffffff',
+                borderWidth: 2
             }]
         },
         options: {
@@ -1005,20 +1018,23 @@ document.addEventListener('DOMContentLoaded', function() {
                     position: 'right',
                     labels: {
                         padding: 20,
-                        font: {
-                            size: 12
-                        },
                         generateLabels: function(chart) {
                             const data = chart.data;
                             if (data.labels.length && data.datasets.length) {
-                                return data.labels.map((label, i) => ({
-                                    text: `${label} (${categoryTypes[i]})`,
-                                    fillStyle: colors[i],
-                                    strokeStyle: colors[i],
-                                    lineWidth: 1,
-                                    hidden: false,
-                                    index: i
-                                }));
+                                return data.labels.map(function(label, i) {
+                                    const meta = chart.getDatasetMeta(0);
+                                    const value = data.datasets[0].data[i];
+                                    const type = categoryTypes[i];
+                                    
+                                    return {
+                                        text: `${label} (${type === 'income' ? '+' : '-'}$${value.toFixed(2)})`,
+                                        fillStyle: colors[i],
+                                        strokeStyle: '#ffffff',
+                                        lineWidth: 2,
+                                        hidden: isNaN(value) || meta.data[i].hidden,
+                                        index: i
+                                    };
+                                });
                             }
                             return [];
                         }
@@ -1027,11 +1043,9 @@ document.addEventListener('DOMContentLoaded', function() {
                 tooltip: {
                     callbacks: {
                         label: function(context) {
-                            const total = context.dataset.data.reduce((a, b) => a + b, 0);
                             const value = context.raw;
-                            const percentage = ((value / total) * 100).toFixed(1);
                             const type = categoryTypes[context.dataIndex];
-                            return `${context.label} (${type}): $${value.toFixed(2)} (${percentage}%)`;
+                            return `${context.label}: ${type === 'income' ? '+' : '-'}$${value.toFixed(2)}`;
                         }
                     }
                 }
