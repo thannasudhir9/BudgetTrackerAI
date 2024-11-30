@@ -1,0 +1,321 @@
+{% extends "base.html" %}
+
+{% block title %}Category Statistics{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2 class="mb-0">Category Statistics</h2>
+        <div class="d-flex align-items-center gap-3">
+            <!-- Time Period Selector -->
+            <div class="d-flex align-items-center gap-2">
+                <select id="periodSelect" class="form-select form-select-sm">
+                    <option value="month">This Month</option>
+                    <option value="quarter">This Quarter</option>
+                    <option value="year">This Year</option>
+                    <option value="all">All Time</option>
+                </select>
+            </div>
+            <!-- Currency Selector -->
+            <div class="d-flex align-items-center gap-2">
+                <select id="currencySelector" class="form-select form-select-sm">
+                    <option value="USD">USD ($)</option>
+                    <option value="EUR">EUR (€)</option>
+                    <option value="INR">INR (₹)</option>
+                </select>
+                <span id="conversionRateDisplay" class="text-muted small"></span>
+            </div>
+            <!-- Export Button -->
+            <button class="btn btn-outline-primary btn-sm" onclick="generatePDF()">
+                <i class="bi bi-file-pdf"></i> Export PDF
+            </button>
+        </div>
+    </div>
+
+    <!-- Summary Cards -->
+    <div class="row g-4 mb-4">
+        <div class="col-md-4">
+            <div class="card border-0 shadow-sm">
+                <div class="card-body">
+                    <h6 class="card-subtitle mb-2 text-success">Total Income</h6>
+                    <h4 class="card-title mb-0" id="totalIncome">$0.00</h4>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card border-0 shadow-sm">
+                <div class="card-body">
+                    <h6 class="card-subtitle mb-2 text-danger">Total Expenses</h6>
+                    <h4 class="card-title mb-0" id="totalExpenses">$0.00</h4>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card border-0 shadow-sm">
+                <div class="card-body">
+                    <h6 class="card-subtitle mb-2 text-primary">Net Balance</h6>
+                    <h4 class="card-title mb-0" id="netBalance">$0.00</h4>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Charts Row -->
+    <div class="row mb-4">
+        <!-- Income Chart -->
+        <div class="col-md-6 mb-4">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-header bg-white">
+                    <h5 class="card-title mb-0">Income Distribution</h5>
+                </div>
+                <div class="card-body">
+                    <canvas id="incomePieChart" height="300"></canvas>
+                </div>
+            </div>
+        </div>
+        <!-- Expense Chart -->
+        <div class="col-md-6 mb-4">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-header bg-white">
+                    <h5 class="card-title mb-0">Expense Distribution</h5>
+                </div>
+                <div class="card-body">
+                    <canvas id="expensePieChart" height="300"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Statistics Tables Row -->
+    <div class="row">
+        <!-- Income Statistics -->
+        <div class="col-md-6 mb-4">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-header bg-white">
+                    <h5 class="card-title mb-0">Income Statistics</h5>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead>
+                                <tr>
+                                    <th>Category</th>
+                                    <th>Amount</th>
+                                    <th>Percentage</th>
+                                    <th>Transactions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="incomeStats"></tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <!-- Expense Statistics -->
+        <div class="col-md-6 mb-4">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-header bg-white">
+                    <h5 class="card-title mb-0">Expense Statistics</h5>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead>
+                                <tr>
+                                    <th>Category</th>
+                                    <th>Amount</th>
+                                    <th>Percentage</th>
+                                    <th>Transactions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="expenseStats"></tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+<script>
+// Currency conversion rates
+const conversionRates = {
+    USD: 1,
+    EUR: 0.92,
+    INR: 82.92
+};
+
+const currencySymbols = {
+    USD: '$',
+    EUR: '€',
+    INR: '₹'
+};
+
+// Initialize charts and data
+document.addEventListener('DOMContentLoaded', function() {
+    // Set saved currency preference
+    const savedCurrency = localStorage.getItem('preferredCurrency') || 'USD';
+    document.getElementById('currencySelector').value = savedCurrency;
+    updateCurrencyDisplay(savedCurrency);
+
+    // Add event listeners
+    document.getElementById('currencySelector').addEventListener('change', function() {
+        updateCurrencyDisplay(this.value);
+        updateCharts();
+    });
+
+    document.getElementById('periodSelect').addEventListener('change', function() {
+        updateCharts();
+    });
+
+    // Initial load
+    updateCharts();
+});
+
+function updateCharts() {
+    const period = document.getElementById('periodSelect').value;
+    fetch(`/api/category-stats/${period}`)
+        .then(response => response.json())
+        .then(data => {
+            updateSummaryCards(data.summary);
+            updateCategoryCharts(data.categories);
+            updateStatsTables(data.categories);
+        })
+        .catch(error => console.error('Error updating charts:', error));
+}
+
+function updateSummaryCards(summary) {
+    document.getElementById('totalIncome').textContent = formatCurrency(summary.total_income);
+    document.getElementById('totalExpenses').textContent = formatCurrency(summary.total_expenses);
+    document.getElementById('netBalance').textContent = formatCurrency(summary.net_balance);
+}
+
+function updateCategoryCharts(categoryData) {
+    // Update Income Pie Chart
+    updatePieChart('incomePieChart', 
+                   categoryData.income.labels, 
+                   categoryData.income.data, 
+                   categoryData.income.colors);
+
+    // Update Expense Pie Chart
+    updatePieChart('expensePieChart', 
+                   categoryData.expense.labels, 
+                   categoryData.expense.data, 
+                   categoryData.expense.colors);
+}
+
+function updatePieChart(canvasId, labels, data, colors) {
+    const ctx = document.getElementById(canvasId).getContext('2d');
+    if (window[canvasId] instanceof Chart) {
+        window[canvasId].destroy();
+    }
+
+    window[canvasId] = new Chart(ctx, {
+        type: 'pie',
+        data: {
+            labels: labels,
+            datasets: [{
+                data: data,
+                backgroundColor: colors,
+                borderWidth: 1
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    position: 'right'
+                },
+                tooltip: {
+                    callbacks: {
+                        label: context => {
+                            const label = context.label || '';
+                            const value = context.raw || 0;
+                            const percentage = ((value / context.dataset.data.reduce((a, b) => a + b, 0)) * 100).toFixed(1);
+                            return `${label}: ${formatCurrency(value)} (${percentage}%)`;
+                        }
+                    }
+                }
+            }
+        }
+    });
+}
+
+function updateStatsTables(categoryData) {
+    // Update Income Stats
+    updateStatsTable('incomeStats', categoryData.income);
+    // Update Expense Stats
+    updateStatsTable('expenseStats', categoryData.expense);
+}
+
+function updateStatsTable(tableId, data) {
+    const tbody = document.getElementById(tableId);
+    const total = data.data.reduce((a, b) => a + b, 0);
+    
+    tbody.innerHTML = data.labels.map((label, index) => {
+        const amount = data.data[index];
+        const percentage = ((amount / total) * 100).toFixed(1);
+        const transactions = data.transactions[index];
+        
+        return `
+            <tr>
+                <td>
+                    <span class="badge" style="background-color: ${data.colors[index]}">
+                        ${label}
+                    </span>
+                </td>
+                <td>${formatCurrency(amount)}</td>
+                <td>${percentage}%</td>
+                <td>${transactions}</td>
+            </tr>
+        `;
+    }).join('');
+}
+
+function updateCurrencyDisplay(currency) {
+    const symbols = document.querySelectorAll('.currency-symbol');
+    const rate = conversionRates[currency];
+    const symbol = currencySymbols[currency];
+
+    symbols.forEach(el => el.textContent = symbol);
+
+    const rateDisplay = document.getElementById('conversionRateDisplay');
+    if (currency === 'USD') {
+        rateDisplay.textContent = '';
+    } else {
+        rateDisplay.textContent = `1 USD = ${rate} ${currency}`;
+    }
+
+    localStorage.setItem('preferredCurrency', currency);
+}
+
+function formatCurrency(amount) {
+    const currency = document.getElementById('currencySelector').value;
+    const rate = conversionRates[currency];
+    const convertedAmount = amount * rate;
+    
+    return new Intl.NumberFormat('en-US', {
+        style: 'currency',
+        currency: currency
+    }).format(convertedAmount);
+}
+
+function generatePDF() {
+    const element = document.querySelector('.container');
+    const opt = {
+        margin: 1,
+        filename: 'Category_Statistics.pdf',
+        image: { type: 'jpeg', quality: 0.98 },
+        html2canvas: { scale: 2 },
+        jsPDF: { unit: 'in', format: 'letter', orientation: 'portrait' }
+    };
+
+    html2pdf().set(opt).from(element).save();
+}
+</script>
+{% endblock %}

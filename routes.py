@@ -1,22 +1,50 @@
 from flask import Flask, render_template, request, redirect, url_for, flash, jsonify, make_response
 from flask_login import LoginManager, UserMixin, login_user, login_required, logout_user, current_user
 from werkzeug.security import generate_password_hash, check_password_hash
-from flask_sqlalchemy import SQLAlchemy
-from datetime import datetime, timedelta
-from sqlalchemy import func
-import csv
-import io
+from datetime import datetime, timedelta, date
+from decimal import Decimal
+from models import db, User, BudgetTransaction, UserRole, TransactionCategory
+import json
+import random
 from enum import Enum
-from models import User, BudgetTransaction, UserRole, TransactionCategory
-from extensions import db, mail
-from sqlalchemy import desc
+from extensions import mail
+from sqlalchemy import desc, func
 import secrets
 from flask_mail import Message
 from pdfProcessor import extract_transactions_from_pdf
 import os
 from werkzeug.utils import secure_filename
+from flask_sqlalchemy import SQLAlchemy
+import csv
+import io
+
+app = Flask(__name__)
+app.config['SECRET_KEY'] = 'your-secret-key'  # Change this to a secure secret key
+app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///budget.db'
+app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
+
+db.init_app(app)
+login_manager = LoginManager()
+login_manager.init_app(app)
+login_manager.login_view = 'login'
+
+@login_manager.user_loader
+def load_user(user_id):
+    return User.query.get(int(user_id))
+
+def generate_color_for_category(category_name):
+    """Generate a consistent color for a category."""
+    # Use hash of category name to generate consistent hue
+    hash_value = sum(ord(c) for c in category_name)
+    hue = hash_value % 360  # 0-359 degrees
+    saturation = 70  # Constant saturation
+    lightness = 45  # Constant lightness
+    return f'hsl({hue}, {saturation}%, {lightness}%)'
 
 def init_routes(app):
+    # Make generate_color_for_category available in templates
+    app.jinja_env.globals.update(generate_color_for_category=generate_color_for_category)
+
     # Home Route
     @app.route('/')
     def home():
@@ -1081,19 +1109,6 @@ This link will expire in 1 hour.
         except Exception as e:
             return jsonify({'error': str(e)}), 500
 
-    def generate_color_for_category(category_name):
-        """Generate a consistent color for a category."""
-        # Use a hash of the category name to generate a consistent hue
-        hash_value = sum(ord(c) for c in category_name)
-        hue = hash_value % 360
-        
-        # Use fixed saturation and lightness for pastel colors
-        saturation = 60
-        lightness = 70
-        
-        # Convert HSL to RGB
-        return f'hsl({hue}, {saturation}%, {lightness}%)'
-
     @app.route('/api/daily-transactions/<int:year>/<int:month>')
     @login_required
     def get_daily_transactions(year, month):
@@ -1230,3 +1245,111 @@ This link will expire in 1 hour.
 
         except Exception as e:
             return jsonify({'error': str(e)}), 500
+    
+    
+    @app.route('/category-stats')
+    @login_required
+    def category_stats():
+        return render_template('category_stats.html')
+
+    @app.route('/api/category-stats/<period>')
+    @login_required
+    def get_category_stats(period):
+        user_id = current_user.id
+        
+        # Calculate date range based on period
+        end_date = datetime.now()
+        if period == 'month':
+            # Get the first day of current month
+            start_date = end_date.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
+            # Get the last day of current month
+            if end_date.month == 12:
+                end_date = end_date.replace(year=end_date.year + 1, month=1, day=1) - timedelta(days=1)
+            else:
+                end_date = end_date.replace(month=end_date.month + 1, day=1) - timedelta(days=1)
+            end_date = end_date.replace(hour=23, minute=59, second=59, microsecond=999999)
+        elif period == 'quarter':
+            current_quarter = (end_date.month - 1) // 3
+            start_date = end_date.replace(month=current_quarter * 3 + 1, day=1, hour=0, minute=0, second=0, microsecond=0)
+            if current_quarter == 3:  # Last quarter of the year
+                end_date = end_date.replace(year=end_date.year + 1, month=1, day=1) - timedelta(days=1)
+            else:
+                end_date = end_date.replace(month=(current_quarter + 1) * 3 + 1, day=1) - timedelta(days=1)
+            end_date = end_date.replace(hour=23, minute=59, second=59, microsecond=999999)
+        elif period == 'year':
+            start_date = end_date.replace(month=1, day=1, hour=0, minute=0, second=0, microsecond=0)
+            end_date = end_date.replace(month=12, day=31, hour=23, minute=59, second=59, microsecond=999999)
+        else:  # all time
+            start_date = datetime.min
+            end_date = datetime.max
+
+        # Get transactions for the period
+        transactions = BudgetTransaction.query.filter(
+            BudgetTransaction.user_id == user_id,
+            BudgetTransaction.date >= start_date,
+            BudgetTransaction.date <= end_date
+        ).all()
+
+        # Process transactions
+        income_categories = {}
+        expense_categories = {}
+        income_transactions = {}
+        expense_transactions = {}
+        total_income = 0
+        total_expenses = 0
+
+        for t in transactions:
+            if t.amount > 0:
+                if t.category not in income_categories:
+                    income_categories[t.category] = 0
+                    income_transactions[t.category] = 0
+                income_categories[t.category] += t.amount
+                income_transactions[t.category] += 1
+                total_income += t.amount
+            else:
+                if t.category not in expense_categories:
+                    expense_categories[t.category] = 0
+                    expense_transactions[t.category] = 0
+                expense_categories[t.category] += abs(t.amount)
+                expense_transactions[t.category] += 1
+                total_expenses += abs(t.amount)
+
+        # Generate colors for categories
+        def generate_colors(n):
+            import random
+            colors = []
+            for _ in range(n):
+                r = random.randint(50, 200)  # Darker range
+                g = random.randint(50, 200)  # Darker range
+                b = random.randint(50, 200)  # Darker range
+                colors.append(f'rgba({r},{g},{b},0.9)')  # Higher opacity
+            return colors
+
+        # Prepare response data
+        income_data = {
+            'labels': list(income_categories.keys()),
+            'data': list(income_categories.values()),
+            'colors': generate_colors(len(income_categories)),
+            'transactions': [income_transactions[cat] for cat in income_categories.keys()]
+        }
+
+        expense_data = {
+            'labels': list(expense_categories.keys()),
+            'data': list(expense_categories.values()),
+            'colors': generate_colors(len(expense_categories)),
+            'transactions': [expense_transactions[cat] for cat in expense_categories.keys()]
+        }
+
+        return jsonify({
+            'summary': {
+                'total_income': total_income,
+                'total_expenses': total_expenses,
+                'net_balance': total_income - total_expenses
+            },
+            'categories': {
+                'income': income_data,
+                'expense': expense_data
+            }
+        })
+
+init_routes(app)

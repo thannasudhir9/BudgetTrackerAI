@@ -32,7 +32,14 @@
                 <ul class="navbar-nav">
                     {% if current_user.is_authenticated %}
                     <li class="nav-item">
-                        <a class="nav-link {% if request.endpoint == 'dashboard' %}active{% endif %}" href="{{ url_for('dashboard') }}">Dashboard</a>
+                        <a class="nav-link {{ 'active' if request.endpoint == 'dashboard' }}" href="{{ url_for('dashboard') }}">
+                            <i class="bi bi-speedometer2"></i> Dashboard
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link {{ 'active' if request.endpoint == 'category_stats' }}" href="{{ url_for('category_stats') }}">
+                            <i class="bi bi-pie-chart"></i> Category Stats
+                        </a>
                     </li>
                     <li class="nav-item">
                         <a class="nav-link {% if request.endpoint == 'view_transactions' %}active{% endif %}" href="{{ url_for('view_transactions') }}">Transactions</a>

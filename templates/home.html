@@ -61,10 +61,15 @@
                                     <tbody>
                                         {% for transaction in recent_transactions %}
                                         <tr>
-                                            <td>{{ transaction.date.strftime('%b %d') }}</td>
+                                            <td>{{ transaction.date }}</td>
+                                            <td>
+                                                <span class="badge" style="background-color: {{ generate_color_for_category(transaction.category) }}">
+                                                    {{ transaction.category }}
+                                                </span>
+                                            </td>
                                             <td>{{ transaction.description }}</td>
-                                            <td class="{{ 'text-success' if transaction.amount > 0 else 'text-danger' }} text-end">
-                                                {{ '+' if transaction.amount > 0 else '-' }}<span class="currency-symbol">$</span><span data-amount="{{ transaction.amount|abs }}">{{ "%.2f"|format(transaction.amount|abs) }}</span>
+                                            <td class="text-end {{ 'text-success' if transaction.amount > 0 else 'text-danger' }}">
+                                                ${{ '%0.2f'|format(transaction.amount|abs) }}
                                             </td>
                                         </tr>
                                         {% endfor %}
