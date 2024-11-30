@@ -257,7 +257,7 @@ function updateStatsTable(tableId, data) {
     const tbody = document.getElementById(tableId);
     const total = data.data.reduce((a, b) => a + b, 0);
     
-    tbody.innerHTML = data.labels.map((label, index) => {
+    let html = data.labels.map((label, index) => {
         const amount = data.data[index];
         const percentage = ((amount / total) * 100).toFixed(1);
         const transactions = data.transactions[index];
@@ -275,6 +275,19 @@ function updateStatsTable(tableId, data) {
             </tr>
         `;
     }).join('');
+    
+    // Add total row
+    const totalTransactions = data.transactions.reduce((a, b) => a + b, 0);
+    html += `
+        <tr class="table-light fw-bold">
+            <td>Total</td>
+            <td>${formatCurrency(total)}</td>
+            <td>100%</td>
+            <td>${totalTransactions}</td>
+        </tr>
+    `;
+    
+    tbody.innerHTML = html;
 }
 
 function updateCurrencyDisplay(currency) {
@@ -296,8 +309,8 @@ function updateCurrencyDisplay(currency) {
 
 function formatCurrency(amount) {
     const currency = document.getElementById('currencySelector').value;
-    const rate = conversionRates[currency];
-    const convertedAmount = amount * rate;
+    // Only apply conversion rate if not USD
+    const convertedAmount = currency === 'USD' ? amount : amount * conversionRates[currency];
     
     return new Intl.NumberFormat('en-US', {
         style: 'currency',
