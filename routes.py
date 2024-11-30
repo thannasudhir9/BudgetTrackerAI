@@ -91,11 +91,55 @@ def init_routes(app):
     @login_required
     def dashboard():
         try:
+            # Calculate total income and expenses
+            total_income = db.session.query(func.sum(BudgetTransaction.amount))\
+                .filter(BudgetTransaction.user_id == current_user.id)\
+                .filter(BudgetTransaction.amount > 0).scalar() or 0
+
+            total_expenses = db.session.query(func.sum(BudgetTransaction.amount))\
+                .filter(BudgetTransaction.user_id == current_user.id)\
+                .filter(BudgetTransaction.amount < 0).scalar() or 0
+
+            net_balance = total_income - total_expenses
+
             # Get current date and calculate date ranges
             today = datetime.now().date()
-            start_of_month = today.replace(day=1)
+            current_year = today.year
             
-            # Get number of days in current month
+            # Get transactions for the whole year
+            year_start = datetime(current_year, 1, 1)
+            year_end = datetime(current_year, 12, 31, 23, 59, 59, 999999)
+            
+            year_transactions = BudgetTransaction.query.filter(
+                BudgetTransaction.user_id == current_user.id,
+                BudgetTransaction.date.between(
+                    datetime.combine(year_start, datetime.min.time()),
+                    datetime.combine(year_end, datetime.max.time())
+                )
+            ).order_by(BudgetTransaction.date.desc()).all()
+
+            # Process category data for the whole year
+            categories = []
+            category_amounts = []
+            category_types = []
+            category_data = {}
+            
+            for transaction in year_transactions:
+                if transaction.category not in category_data:
+                    category_data[transaction.category] = {
+                        'amount': 0,
+                        'type': 'income' if transaction.amount > 0 else 'expense'
+                    }
+                category_data[transaction.category]['amount'] += abs(transaction.amount)
+            
+            # Sort categories by amount in descending order
+            sorted_categories = sorted(category_data.items(), key=lambda x: x[1]['amount'], reverse=True)
+            categories = [cat for cat, _ in sorted_categories]
+            category_amounts = [data['amount'] for _, data in sorted_categories]
+            category_types = [data['type'] for _, data in sorted_categories]
+
+            # Get daily data for current month
+            start_of_month = today.replace(day=1)
             if today.month == 12:
                 next_month = today.replace(year=today.year + 1, month=1, day=1)
             else:
@@ -184,16 +228,16 @@ def init_routes(app):
                 expenses = abs(sum(t.amount for t in month_transactions if t.amount < 0))
                 
                 monthly_data.append({
-                    'month': month_start.strftime('%B'),  # Only month name since we're in current year view
+                    'month': month_start.strftime('%B'),
                     'income': float(income),
                     'expenses': float(expenses)
                 })
 
-            # Yearly transactions (last 3 years)
+            # Yearly transactions (last 5 years)
             yearly_data = []
             yearly_transactions = []  # List to store yearly transactions
             
-            for i in range(2, -1, -1):
+            for i in range(4, -1, -1):
                 year = today.year - i
                 year_start = datetime(year, 1, 1).date()
                 year_end = datetime(year, 12, 31).date() if i > 0 else today
@@ -218,14 +262,42 @@ def init_routes(app):
                     'expenses': float(expenses)
                 })
 
-            # Get category summary
+            # Calculate total income, expenses, and net balance
+            total_income = sum(t.amount for t in year_transactions if t.amount > 0)
+            total_expenses = abs(sum(t.amount for t in year_transactions if t.amount < 0))
+            net_balance = total_income - total_expenses
+
+            # Get category summary for the entire year
+            current_year = datetime.now().year
+            year_start = datetime(current_year, 1, 1)
+            year_end = datetime(current_year, 12, 31)
+
             category_summary = db.session.query(
-                BudgetTransaction.category,
+                BudgetTransaction.category.label('category'),
                 func.sum(BudgetTransaction.amount).label('total')
             ).filter(
                 BudgetTransaction.user_id == current_user.id,
-                BudgetTransaction.date >= start_of_month
-            ).group_by(BudgetTransaction.category).all()
+                BudgetTransaction.date >= year_start,
+                BudgetTransaction.date <= year_end
+            ).group_by(
+                BudgetTransaction.category
+            ).order_by(
+                func.abs(func.sum(BudgetTransaction.amount)).desc()
+            ).all()
+
+            # Convert category names to display names using TransactionCategory
+            category_summary = [
+                {
+                    'category': TransactionCategory.get_by_name(item.category).value['name'],
+                    'total': float(item.total)
+                }
+                for item in category_summary
+            ]
+
+            # Get category types for the pie chart
+            categories = [item['category'] for item in category_summary]
+            category_amounts = [abs(float(item['total'])) for item in category_summary]
+            category_types = ['income' if item['total'] > 0 else 'expense' for item in category_summary]
 
             # Get recent transactions
             recent_transactions = BudgetTransaction.query.filter_by(
@@ -255,20 +327,26 @@ def init_routes(app):
             categories = list(category_totals.keys())
             amounts = list(category_totals.values())
 
+            # Render the dashboard template with all the data
             return render_template('dashboard.html',
-                               daily_data=daily_data,
-                               weekly_data=weekly_data,
-                               monthly_data=monthly_data,
-                               yearly_data=yearly_data,
-                               category_summary=category_summary,
-                               recent_transactions=recent_transactions,
-                               daily_transactions=daily_transactions,
-                               weekly_transactions=weekly_transactions,
-                               monthly_transactions=monthly_transactions,
-                               yearly_transactions=yearly_transactions,
-                               categories=categories,
-                               category_amounts=amounts
-            )
+                                daily_data=daily_data,
+                                weekly_data=weekly_data,
+                                monthly_data=monthly_data,
+                                yearly_data=yearly_data,
+                                category_summary=category_summary,
+                                daily_transactions=daily_transactions,
+                                weekly_transactions=weekly_transactions,
+                                monthly_transactions=monthly_transactions,
+                                yearly_transactions=yearly_transactions,
+                                categories=categories,
+                                category_amounts=category_amounts,
+                                category_types=category_types,
+                                recent_transactions=recent_transactions,
+                                total_income=total_income,
+                                total_expenses=total_expenses,
+                                net_balance=net_balance,
+                                current_year=datetime.now().year)
+        
         except Exception as e:
             print(f"Error in dashboard route: {str(e)}")
             return render_template('error.html', error=str(e))

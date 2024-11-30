@@ -42,13 +42,50 @@
 
     <h2 class="mb-4">Financial Overview</h2>
 
+    <!-- Financial Summary Cards -->
+    <div class="row g-4 mb-4">
+        <div class="col-md-4">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-body">
+                    <h6 class="card-title text-muted mb-3">Total Income</h6>
+                    <h3 class="card-text text-success mb-0">
+                        <span class="currency-symbol">$</span>
+                        <span class="amount" data-amount="{{ total_income }}">{{ '{:,.2f}'.format(total_income) }}</span>
+                    </h3>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-body">
+                    <h6 class="card-title text-muted mb-3">Total Expenses</h6>
+                    <h3 class="card-text text-danger mb-0">
+                        <span class="currency-symbol">$</span>
+                        <span class="amount" data-amount="{{ total_expenses }}">{{ '{:,.2f}'.format(total_expenses) }}</span>
+                    </h3>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-body">
+                    <h6 class="card-title text-muted mb-3">Net Balance</h6>
+                    <h3 class="card-text {{ 'text-success' if net_balance >= 0 else 'text-danger' }} mb-0">
+                        <span class="currency-symbol">$</span>
+                        <span class="amount" data-amount="{{ net_balance }}">{{ '{:,.2f}'.format(net_balance|abs) }}</span>
+                    </h3>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <!-- Categories and Recent Transactions Row -->
     <div class="row g-4 mb-4">
         <!-- Categories Summary -->
         <div class="col-md-6">
             <div class="card border-0 shadow-sm">
                 <div class="card-body">
-                    <h5 class="card-title mb-4">Categories This Month</h5>
+                    <h5 class="card-title mb-4">Category Statistics ({{ current_year }})</h5>
                     <div class="table-responsive" style="max-height: 300px; overflow-y: auto;">
                         <table class="table table-hover">
                             <thead>
@@ -280,13 +317,13 @@
             <div class="card border-0 shadow-sm h-100">
                 <div class="card-body">
                     <div class="d-flex justify-content-between align-items-center mb-4">
-                        <h5 class="card-title mb-0">Monthly Overview</h5>
+                        <h5 class="card-title mb-0">Monthly Overview ({{ monthly_data[0].month }} - {{ monthly_data[-1].month }})</h5>
                         <div class="d-flex gap-2">
                             <select id="monthlyOverviewYearSelect" class="form-select form-select-sm" style="width: auto;">
                                 <!-- Will be populated by JavaScript -->
                             </select>
                             <a href="{{ url_for('view_transactions', filter='monthly') }}" class="btn btn-sm btn-outline-primary no-print">View All</a>
-                        </div>
+                    </div>
                     </div>
                     <div style="height: 300px; position: relative;">
                         <canvas id="monthlyChart"></canvas>
@@ -336,10 +373,9 @@
             <div class="card border-0 shadow-sm h-100">
                 <div class="card-body">
                     <div class="d-flex justify-content-between align-items-center mb-4">
-                        <h5 class="card-title mb-0">Yearly Overview</h5>
-                        <a href="{{ url_for('view_transactions', filter='yearly') }}" class="btn btn-sm btn-outline-primary no-print">View All</a>
+                        <h5 class="card-title mb-0">Yearly Overview ({{ yearly_data[0].year }} - {{ yearly_data[-1].year }})</h5>
                     </div>
-                    <div style="height: 300px; position: relative;">
+                    <div style="height: 300px;">
                         <canvas id="yearlyChart"></canvas>
                     </div>
                     <!-- Yearly Transactions List -->
@@ -840,16 +876,20 @@ document.addEventListener('DOMContentLoaded', function() {
         datasets: [{
             label: 'Income',
             data: {{ monthly_data | map(attribute='income') | list | tojson }},
-            backgroundColor: 'rgba(40, 167, 69, 0.5)',
+            backgroundColor: 'rgba(40, 167, 69, 0.8)',
             borderColor: 'rgb(40, 167, 69)',
-            borderWidth: 1
+            borderWidth: 1,
+            barPercentage: 0.7,
+            categoryPercentage: 0.8
         },
         {
             label: 'Expenses',
             data: {{ monthly_data | map(attribute='expenses') | list | tojson }},
-            backgroundColor: 'rgba(220, 53, 69, 0.5)',
+            backgroundColor: 'rgba(220, 53, 69, 0.8)',
             borderColor: 'rgb(220, 53, 69)',
-            borderWidth: 1
+            borderWidth: 1,
+            barPercentage: 0.7,
+            categoryPercentage: 0.8
         }]
     };
     new Chart(monthlyCtx, {
@@ -863,7 +903,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     beginAtZero: true,
                     ticks: {
                         callback: function(value) {
-                            return '$' + value;
+                            return '$' + value.toLocaleString();
                         }
                     }
                 }
@@ -871,6 +911,13 @@ document.addEventListener('DOMContentLoaded', function() {
             plugins: {
                 legend: {
                     position: 'top',
+                },
+                tooltip: {
+                    callbacks: {
+                        label: function(context) {
+                            return context.dataset.label + ': $' + context.raw.toLocaleString();
+                        }
+                    }
                 }
             }
         }
@@ -883,16 +930,20 @@ document.addEventListener('DOMContentLoaded', function() {
         datasets: [{
             label: 'Income',
             data: {{ yearly_data | map(attribute='income') | list | tojson }},
-            backgroundColor: 'rgba(40, 167, 69, 0.5)',
+            backgroundColor: 'rgba(40, 167, 69, 0.8)',
             borderColor: 'rgb(40, 167, 69)',
-            borderWidth: 1
+            borderWidth: 1,
+            barPercentage: 0.7,
+            categoryPercentage: 0.8
         },
         {
             label: 'Expenses',
             data: {{ yearly_data | map(attribute='expenses') | list | tojson }},
-            backgroundColor: 'rgba(220, 53, 69, 0.5)',
+            backgroundColor: 'rgba(220, 53, 69, 0.8)',
             borderColor: 'rgb(220, 53, 69)',
-            borderWidth: 1
+            borderWidth: 1,
+            barPercentage: 0.7,
+            categoryPercentage: 0.8
         }]
     };
     new Chart(yearlyCtx, {
@@ -906,7 +957,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     beginAtZero: true,
                     ticks: {
                         callback: function(value) {
-                            return '$' + value;
+                            return '$' + value.toLocaleString();
                         }
                     }
                 }
@@ -914,6 +965,13 @@ document.addEventListener('DOMContentLoaded', function() {
             plugins: {
                 legend: {
                     position: 'top',
+                },
+                tooltip: {
+                    callbacks: {
+                        label: function(context) {
+                            return context.dataset.label + ': $' + context.raw.toLocaleString();
+                        }
+                    }
                 }
             }
         }
@@ -923,14 +981,10 @@ document.addEventListener('DOMContentLoaded', function() {
     const categoryCtx = document.getElementById('categoryPieChart').getContext('2d');
     const categories = {{ categories|tojson }};
     const categoryAmounts = {{ category_amounts|tojson }};
+    const categoryTypes = {{ category_types|tojson }};
     
-    // Generate colors for categories
-    const colors = categories.map(() => {
-        const r = Math.floor(Math.random() * 200 + 55);
-        const g = Math.floor(Math.random() * 200 + 55);
-        const b = Math.floor(Math.random() * 200 + 55);
-        return `rgba(${r}, ${g}, ${b}, 0.8)`;
-    });
+    // Use green for income and red for expenses
+    const colors = categoryTypes.map(type => type === 'income' ? '#4CAF50' : '#FF5252');
 
     // Create pie chart
     new Chart(categoryCtx, {
@@ -940,7 +994,7 @@ document.addEventListener('DOMContentLoaded', function() {
             datasets: [{
                 data: categoryAmounts,
                 backgroundColor: colors,
-                borderColor: colors.map(color => color.replace('0.8', '1')),
+                borderColor: colors,
                 borderWidth: 1
             }]
         },
@@ -953,6 +1007,20 @@ document.addEventListener('DOMContentLoaded', function() {
                         padding: 20,
                         font: {
                             size: 12
+                        },
+                        generateLabels: function(chart) {
+                            const data = chart.data;
+                            if (data.labels.length && data.datasets.length) {
+                                return data.labels.map((label, i) => ({
+                                    text: `${label} (${categoryTypes[i]})`,
+                                    fillStyle: colors[i],
+                                    strokeStyle: colors[i],
+                                    lineWidth: 1,
+                                    hidden: false,
+                                    index: i
+                                }));
+                            }
+                            return [];
                         }
                     }
                 },
@@ -962,7 +1030,8 @@ document.addEventListener('DOMContentLoaded', function() {
                             const total = context.dataset.data.reduce((a, b) => a + b, 0);
                             const value = context.raw;
                             const percentage = ((value / total) * 100).toFixed(1);
-                            return `${context.label}: $${value.toFixed(2)} (${percentage}%)`;
+                            const type = categoryTypes[context.dataIndex];
+                            return `${context.label} (${type}): $${value.toFixed(2)} (${percentage}%)`;
                         }
                     }
                 }
@@ -977,12 +1046,13 @@ document.addEventListener('DOMContentLoaded', function() {
     let statsHtml = '';
     categories.forEach((category, index) => {
         const amount = categoryAmounts[index];
+        const type = categoryTypes[index];
         const percentage = ((amount / total) * 100).toFixed(1);
         statsHtml += `
             <tr>
                 <td>
                     <span class="badge" style="background-color: ${colors[index]}">
-                        ${category}
+                        ${category} (${type})
                     </span>
                 </td>
                 <td>$${amount.toFixed(2)}</td>
