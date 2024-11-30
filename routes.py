@@ -157,16 +157,17 @@ def init_routes(app):
                     'expenses': float(expenses)
                 })
 
-            # Monthly transactions (last 6 months)
+            # Monthly transactions (all 12 months of current year)
             monthly_data = []
             monthly_transactions = []  # List to store monthly transactions
             
-            for i in range(5, -1, -1):
-                month_start = (today - timedelta(days=30*i)).replace(day=1)
-                if i > 0:
-                    month_end = (month_start.replace(day=28) + timedelta(days=4)).replace(day=1) - timedelta(days=1)
+            current_year = today.year
+            for month in range(1, 13):
+                month_start = datetime(current_year, month, 1)
+                if month == 12:
+                    month_end = datetime(current_year + 1, 1, 1) - timedelta(days=1)
                 else:
-                    month_end = today
+                    month_end = datetime(current_year, month + 1, 1) - timedelta(days=1)
                     
                 # Get transactions for this month
                 month_transactions = BudgetTransaction.query.filter(
