@@ -1,6 +1,6 @@
 from flask import jsonify, flash, redirect, url_for, render_template, request
 from flask_login import login_required, current_user
-from models import User, UserRole
+from models import User, UserRole, Feedback
 from extensions import db, mail
 from flask_mail import Message
 import secrets
@@ -280,3 +280,65 @@ If you did not make this request then simply ignore this email and no changes wi
         
         flash('Welcome to Pro! Your 14-day free trial has started.', 'success')
         return redirect(url_for('dashboard'))
+
+    def send_feedback_notification(feedback):
+        """Send email notification to super admin about new feedback"""
+        super_admin = User.query.filter_by(role=UserRole.SUPER_ADMIN).first()
+        if not super_admin:
+            return
+            
+        subject = f'New Feedback: {feedback.subject}'
+        body = f'''
+New feedback received from {feedback.name} ({feedback.email})
+
+Subject: {feedback.subject}
+User ID: {feedback.user_id if feedback.user_id else 'Not logged in'}
+Message:
+{feedback.message}
+
+Submitted at: {feedback.created_at}
+'''
+        
+        #send_email(super_admin.email, subject, body)
+        #send_email('thannasudhir.de@gmail.com', subject, body)
+
+    @app.route('/submit_feedback', methods=['POST'])
+    def submit_feedback():
+        try:
+            # Get data from either JSON or form data
+            if request.is_json:
+                data = request.get_json()
+            else:
+                data = request.form.to_dict()
+        
+            # Validate required fields
+            required_fields = ['name', 'email', 'subject', 'message']
+            for field in required_fields:
+                if not data.get(field):
+                    return jsonify({'error': f'{field.title()} is required'}), 400
+
+            # Create new feedback entry
+            feedback = Feedback(
+                name=data['name'],
+                email=data['email'],
+                subject=data['subject'],
+                message=data['message'],
+                user_id=current_user.id if current_user.is_authenticated else None
+            )
+        
+            # Save to database
+            db.session.add(feedback)
+            db.session.commit()
+        
+            # Send email notification to super admin
+            send_feedback_notification(feedback)
+        
+            return jsonify({
+                'success': True, 
+                'message': 'Thank you for your feedback! We will get back to you soon.'
+            }), 200
+    
+        except Exception as e:
+            db.session.rollback()
+            app.logger.error(f"Error submitting feedback: {str(e)}")
+            return jsonify({'error': 'An error occurred processing your request'}), 500

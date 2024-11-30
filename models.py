@@ -53,6 +53,7 @@ class User(UserMixin, db.Model):
     reset_token_expires = db.Column(db.DateTime)
     # Relationships
     transactions = db.relationship('BudgetTransaction', backref='user', lazy=True)
+    feedback_submissions = db.relationship('Feedback', backref='user', lazy=True)
     
     def __init__(self, username, email, role=UserRole.NORMAL):
         self.username = username
@@ -130,3 +131,13 @@ class BudgetTransaction(db.Model):
 
     def __repr__(self):
         return f'<Transaction {self.description} {self.amount}>'
+
+class Feedback(db.Model):
+    __tablename__ = 'feedback'
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String(100), nullable=False)
+    email = db.Column(db.String(120), nullable=False)
+    subject = db.Column(db.String(200), nullable=False)
+    message = db.Column(db.Text, nullable=False)
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=True)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)

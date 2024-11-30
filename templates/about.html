@@ -1,164 +1,257 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>About - Budget Tracker</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.7.2/font/bootstrap-icons.css">
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
-</head>
-<body class="bg-light">
-    <!-- Navigation -->
-    <nav class="navbar navbar-expand-lg navbar-dark bg-primary">
-        <div class="container">
-            <a class="navbar-brand" href="{{ url_for('home') }}">Budget Tracker</a>
-            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
-                <span class="navbar-toggler-icon"></span>
-            </button>
-            <div class="collapse navbar-collapse" id="navbarNav">
-                <ul class="navbar-nav me-auto">
-                    <li class="nav-item">
-                        <a class="nav-link" href="{{ url_for('home') }}">Home</a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link" href="{{ url_for('pricing') }}">Pricing</a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link active" href="{{ url_for('about') }}">About</a>
-                    </li>
-                </ul>
-                <ul class="navbar-nav">
-                    {% if current_user.is_authenticated %}
-                    <li class="nav-item">
-                        <a class="nav-link" href="{{ url_for('dashboard') }}">Dashboard</a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link" href="{{ url_for('logout') }}">Logout</a>
-                    </li>
-                    {% else %}
-                    <li class="nav-item">
-                        <a class="nav-link" href="{{ url_for('login') }}">Login</a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link" href="{{ url_for('register') }}">Register</a>
-                    </li>
-                    {% endif %}
-                </ul>
-            </div>
-        </div>
-    </nav>
+{% extends "base.html" %}
 
-    <!-- About Section -->
-    <div class="container py-5">
-        <div class="row justify-content-center">
-            <div class="col-lg-8 text-center">
-                <h1 class="display-4 fw-bold mb-4">About Budget Tracker</h1>
-                <p class="lead text-muted mb-5">Your Personal Finance Companion</p>
-            </div>
-        </div>
+{% block title %}About - Budget Tracker{% endblock %}
 
-        <!-- Mission Section -->
-        <div class="row mb-5">
-            <div class="col-md-6">
-                <h2 class="h3 mb-4">Our Mission</h2>
-                <p class="text-muted">At Budget Tracker, we believe that financial freedom starts with understanding your money. Our mission is to provide simple yet powerful tools that help you take control of your finances and make informed decisions about your future.</p>
-            </div>
-            <div class="col-md-6">
-                <h2 class="h3 mb-4">Why Choose Us?</h2>
-                <ul class="list-unstyled">
-                    <li class="mb-3"><i class="bi bi-check-circle-fill text-success me-2"></i>Easy to use interface</li>
-                    <li class="mb-3"><i class="bi bi-check-circle-fill text-success me-2"></i>Secure and private</li>
-                    <li class="mb-3"><i class="bi bi-check-circle-fill text-success me-2"></i>Comprehensive reporting</li>
-                    <li class="mb-3"><i class="bi bi-check-circle-fill text-success me-2"></i>Mobile friendly</li>
-                </ul>
-            </div>
+{% block content %}
+<!-- About Section -->
+<div class="container py-5">
+    <div class="row justify-content-center">
+        <div class="col-lg-8 text-center">
+            <h1 class="display-4 fw-bold mb-4">About Budget Tracker</h1>
+            <p class="lead text-muted mb-5">Your Personal Finance Companion</p>
         </div>
+    </div>
 
-        <!-- Features Section -->
-        <div class="row g-4 mb-5">
-            <div class="col-md-4">
-                <div class="card border-0 shadow-sm h-100">
-                    <div class="card-body text-center p-4">
-                        <div class="mb-4">
-                            <i class="bi bi-graph-up text-primary display-4"></i>
-                        </div>
-                        <h3 class="h4 mb-3">Track Expenses</h3>
-                        <p class="text-muted mb-0">Monitor your spending patterns and identify areas where you can save money.</p>
+    <!-- Mission Section -->
+    <div class="row mb-5">
+        <div class="col-md-6">
+            <h2 class="h3 mb-4">Our Mission</h2>
+            <p class="text-muted">At Budget Tracker, we believe that financial freedom starts with understanding your money. Our mission is to provide simple yet powerful tools that help you take control of your finances and make informed decisions about your future.</p>
+        </div>
+        <div class="col-md-6">
+            <h2 class="h3 mb-4">Why Choose Us?</h2>
+            <ul class="list-unstyled">
+                <li class="mb-3"><i class="bi bi-check-circle-fill text-success me-2"></i>Easy to use interface</li>
+                <li class="mb-3"><i class="bi bi-check-circle-fill text-success me-2"></i>Secure and private</li>
+                <li class="mb-3"><i class="bi bi-check-circle-fill text-success me-2"></i>Comprehensive reporting</li>
+                <li class="mb-3"><i class="bi bi-check-circle-fill text-success me-2"></i>Mobile friendly</li>
+            </ul>
+        </div>
+    </div>
+
+    <!-- Features Section -->
+    <div class="row g-4 mb-5">
+        <div class="col-md-4">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-body text-center p-4">
+                    <div class="mb-4">
+                        <i class="bi bi-graph-up text-primary display-4"></i>
                     </div>
-                </div>
-            </div>
-            <div class="col-md-4">
-                <div class="card border-0 shadow-sm h-100">
-                    <div class="card-body text-center p-4">
-                        <div class="mb-4">
-                            <i class="bi bi-pie-chart text-primary display-4"></i>
-                        </div>
-                        <h3 class="h4 mb-3">Budget Planning</h3>
-                        <p class="text-muted mb-0">Set budgets for different categories and stay on track with your financial goals.</p>
-                    </div>
-                </div>
-            </div>
-            <div class="col-md-4">
-                <div class="card border-0 shadow-sm h-100">
-                    <div class="card-body text-center p-4">
-                        <div class="mb-4">
-                            <i class="bi bi-shield-check text-primary display-4"></i>
-                        </div>
-                        <h3 class="h4 mb-3">Secure & Private</h3>
-                        <p class="text-muted mb-0">Your financial data is encrypted and protected with industry-standard security measures.</p>
-                    </div>
+                    <h3 class="h4 mb-3">Track Expenses</h3>
+                    <p class="text-muted mb-0">Monitor your spending patterns and identify areas where you can save money.</p>
                 </div>
             </div>
         </div>
-
-        <!-- Team Section -->
-        <div class="text-center mb-5">
-            <h2 class="mb-4">Our Team</h2>
-            <p class="text-muted mb-5">Meet the people behind Budget Tracker</p>
-            <div class="row g-4 justify-content-center">
-                <div class="col-md-4">
-                    <div class="card border-0 shadow-sm">
-                        <div class="card-body p-4">
-                            <img src="https://via.placeholder.com/150" alt="Team Member" class="rounded-circle mb-3" width="100">
-                            <h3 class="h5 mb-1">Sudhir Kumar Thanna</h3>
-                            <p class="text-muted small mb-3">Founder & CEO</p>
-                            <p class="text-muted mb-0">10+ years of experience in fintech</p>
-                        </div>
+        <div class="col-md-4">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-body text-center p-4">
+                    <div class="mb-4">
+                        <i class="bi bi-pie-chart text-primary display-4"></i>
                     </div>
-                </div>
-                <div class="col-md-4">
-                    <div class="card border-0 shadow-sm">
-                        <div class="card-body p-4">
-                            <img src="https://via.placeholder.com/150" alt="Team Member" class="rounded-circle mb-3" width="100">
-                            <h3 class="h5 mb-1">Sudhir Kumar Thanna AI</h3>
-                            <p class="text-muted small mb-3">Lead Developer</p>
-                            <p class="text-muted mb-0">Expert in secure financial applications</p>
-                        </div>
-                    </div>
+                    <h3 class="h4 mb-3">Budget Planning</h3>
+                    <p class="text-muted mb-0">Set budgets for different categories and stay on track with your financial goals.</p>
                 </div>
             </div>
         </div>
-
-        <!-- Contact Section -->
-        <div class="row justify-content-center">
-            <div class="col-lg-8 text-center">
-                <h2 class="mb-4">Get in Touch</h2>
-                <p class="text-muted mb-5">Have questions? We'd love to hear from you.</p>
-                <div class="d-flex justify-content-center gap-4">
-                    <a href="mailto:support@budgettracker.com" class="text-decoration-none">
-                        <i class="bi bi-envelope text-primary me-2"></i>
-                        support@budgettracker.com
-                    </a>
-                    <a href="tel:+1234567890" class="text-decoration-none">
-                        <i class="bi bi-telephone text-primary me-2"></i>
-                        (123) 456-7890
-                    </a>
+        <div class="col-md-4">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-body text-center p-4">
+                    <div class="mb-4">
+                        <i class="bi bi-shield-check text-primary display-4"></i>
+                    </div>
+                    <h3 class="h4 mb-3">Secure & Private</h3>
+                    <p class="text-muted mb-0">Your financial data is encrypted and protected with industry-standard security.</p>
                 </div>
             </div>
         </div>
     </div>
 
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-</body>
-</html>
+    <!-- Team Section -->
+    <div class="text-center mb-5">
+        <h2 class="mb-4">Our Team</h2>
+        <p class="text-muted mb-5">Meet the people behind Budget Tracker</p>
+        <div class="row g-4 justify-content-center">
+            <div class="col-md-4">
+                <div class="card border-0 shadow-sm">
+                    <div class="card-body p-4">
+                        <img src="https://via.placeholder.com/150" alt="Team Member" class="rounded-circle mb-3" width="100">
+                        <h3 class="h5 mb-1">Sudhir Kumar Thanna</h3>
+                        <p class="text-muted small mb-3">Founder & CEO</p>
+                        <p class="text-muted mb-0">10+ years of experience in fintech</p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="card border-0 shadow-sm">
+                    <div class="card-body p-4">
+                        <img src="https://via.placeholder.com/150" alt="Team Member" class="rounded-circle mb-3" width="100">
+                        <h3 class="h5 mb-1">Sudhir Kumar Thanna AI</h3>
+                        <p class="text-muted small mb-3">Lead Developer</p>
+                        <p class="text-muted mb-0">Expert in secure financial applications</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Contact Form Section -->
+    <div class="row justify-content-center mb-5">
+        <div class="col-lg-8">
+            <div class="card border-0 shadow-sm">
+                <div class="card-body p-5">
+                    <!-- Success Message -->
+                    <div id="feedbackSuccess" class="text-center py-4" style="display: none;">
+                        <i class="bi bi-check-circle-fill text-success fs-1 mb-3"></i>
+                        <h3 class="mb-3">Message Sent Successfully!</h3>
+                        <p class="text-muted mb-4">Thank you for reaching out. We'll get back to you soon.</p>
+                        <div class="d-grid gap-2 d-sm-flex justify-content-sm-center">
+                            <a href="{{ url_for('home') }}" class="btn btn-primary">Back to Home</a>
+                            <button type="button" class="btn btn-outline-secondary" onclick="resetFeedbackForm()">Send Another Message</button>
+                        </div>
+                    </div>
+
+                    <!-- Contact Form -->
+                    <div id="feedbackForm">
+                        <h2 class="text-center mb-4">Contact Us</h2>
+                        <form id="contactForm">
+                            <div class="mb-3">
+                                <label for="name" class="form-label">Name</label>
+                                <input type="text" class="form-control" id="name" name="name" required>
+                            </div>
+                            <div class="mb-3">
+                                <label for="email" class="form-label">Email</label>
+                                <input type="email" class="form-control" id="email" name="email" required>
+                            </div>
+                            <div class="mb-3">
+                                <label for="subject" class="form-label">Subject</label>
+                                <select class="form-select" id="subject" name="subject" required>
+                                    <option value="">Select a subject</option>
+                                    <option value="general">General Inquiry</option>
+                                    <option value="support">Technical Support</option>
+                                    <option value="feedback">Feedback</option>
+                                    <option value="feature">Feature Request</option>
+                                </select>
+                            </div>
+                            <div class="mb-4">
+                                <label for="message" class="form-label">Message</label>
+                                <textarea class="form-control" id="message" name="message" rows="5" required></textarea>
+                            </div>
+                            <div class="d-grid">
+                                <button type="submit" class="btn btn-primary btn-lg">Send Message</button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Toast for feedback -->
+    <div class="toast-container position-fixed bottom-0 end-0 p-3">
+        <div id="feedbackToast" class="toast align-items-center border-0" role="alert" aria-live="assertive" aria-atomic="true">
+            <div class="d-flex">
+                <div class="toast-body">
+                    <!-- Toast message will be inserted here -->
+                </div>
+                <button type="button" class="btn-close me-2 m-auto" data-bs-dismiss="toast" aria-label="Close"></button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Contact Info Section -->
+    <div class="row justify-content-center text-center">
+        <div class="col-lg-8">
+            <h3 class="h4 mb-4">Other Ways to Reach Us</h3>
+            <div class="d-flex justify-content-center gap-4 mb-4">
+                <a href="mailto:support@budgettracker.com" class="text-decoration-none">
+                    <i class="bi bi-envelope-fill text-primary me-2"></i>
+                    support@budgettracker.com
+                </a>
+                <a href="tel:+1234567890" class="text-decoration-none">
+                    <i class="bi bi-telephone-fill text-primary me-2"></i>
+                    (123) 456-7890
+                </a>
+            </div>
+            <div class="social-links">
+                <a href="#" class="text-primary mx-2"><i class="bi bi-twitter"></i></a>
+                <a href="#" class="text-primary mx-2"><i class="bi bi-facebook"></i></a>
+                <a href="#" class="text-primary mx-2"><i class="bi bi-linkedin"></i></a>
+                <a href="#" class="text-primary mx-2"><i class="bi bi-instagram"></i></a>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% block scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const contactForm = document.getElementById('contactForm');
+    const toast = new bootstrap.Toast(document.getElementById('feedbackToast'));
+    const feedbackForm = document.getElementById('feedbackForm');
+    const feedbackSuccess = document.getElementById('feedbackSuccess');
+
+    function showSuccessMessage() {
+        feedbackForm.style.display = 'none';
+        feedbackSuccess.style.display = 'block';
+        feedbackSuccess.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }
+
+    function resetFeedbackForm() {
+        contactForm.reset();
+        feedbackSuccess.style.display = 'none';
+        feedbackForm.style.display = 'block';
+        feedbackForm.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+    
+    // Make resetFeedbackForm available globally
+    window.resetFeedbackForm = resetFeedbackForm;
+
+    contactForm.addEventListener('submit', function(e) {
+        e.preventDefault();
+        
+        const formData = new FormData(this);
+        const jsonData = {};
+        formData.forEach((value, key) => {
+            jsonData[key] = value;
+        });
+
+        const submitButton = this.querySelector('button[type="submit"]');
+        const originalText = submitButton.innerHTML;
+        submitButton.disabled = true;
+        submitButton.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Sending...';
+
+        fetch('{{ url_for("submit_feedback") }}', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(jsonData)
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.error) {
+                const toastElement = document.getElementById('feedbackToast');
+                const toastBody = toastElement.querySelector('.toast-body');
+                toastElement.className = 'toast align-items-center text-white border-0 bg-danger';
+                toastBody.textContent = data.error;
+                toast.show();
+            } else {
+                showSuccessMessage();
+            }
+        })
+        .catch(error => {
+            const toastElement = document.getElementById('feedbackToast');
+            const toastBody = toastElement.querySelector('.toast-body');
+            toastElement.className = 'toast align-items-center text-white border-0 bg-danger';
+            toastBody.textContent = 'An error occurred. Please try again later.';
+            toast.show();
+        })
+        .finally(() => {
+            submitButton.disabled = false;
+            submitButton.innerHTML = originalText;
+        });
+    });
+});
+</script>
+{% endblock %}
+{% endblock %}
