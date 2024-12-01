@@ -61,7 +61,7 @@
                                     <tbody>
                                         {% for transaction in recent_transactions %}
                                         <tr>
-                                            <td>{{ transaction.date }}</td>
+                                            <td>{{ transaction.date.strftime('%Y-%m-%d') }}</td>
                                             <td>
                                                 <span class="badge" style="background-color: {{ generate_color_for_category(transaction.category) }}">
                                                     {{ transaction.category }}
