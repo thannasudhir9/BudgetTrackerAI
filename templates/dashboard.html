@@ -325,6 +325,21 @@
                             <select id="monthlyOverviewYearSelect" class="form-select form-select-sm" style="width: auto;">
                                 <!-- Will be populated by JavaScript -->
                             </select>
+                            <select id="monthlyOverviewMonthSelect" class="form-select form-select-sm" style="width: auto;">
+                                <option value="0">All Months</option>
+                                <option value="1">January</option>
+                                <option value="2">February</option>
+                                <option value="3">March</option>
+                                <option value="4">April</option>
+                                <option value="5">May</option>
+                                <option value="6">June</option>
+                                <option value="7">July</option>
+                                <option value="8">August</option>
+                                <option value="9">September</option>
+                                <option value="10">October</option>
+                                <option value="11">November</option>
+                                <option value="12">December</option>
+                            </select>
                             <a href="{{ url_for('view_transactions', filter='monthly') }}" class="btn btn-sm btn-outline-primary no-print">View All</a>
                     </div>
                     </div>
@@ -344,25 +359,10 @@
                                         <th>Amount</th>
                                     </tr>
                                 </thead>
-                                <tbody>
-                                    {% for transaction in monthly_transactions %}
+                                <tbody id="monthlyTransactionsList">
                                     <tr>
-                                        <td>{{ transaction.date.strftime('%Y-%m-%d') }}</td>
-                                        <td>{{ transaction.description }}</td>
-                                        <td>
-                                            <span class="badge bg-{{ 'success' if transaction.amount > 0 else 'danger' }}">
-                                                {{ transaction.category }}
-                                            </span>
-                                        </td>
-                                        <td class="{{ 'text-success' if transaction.amount > 0 else 'text-danger' }}">
-                                            {{ '+' if transaction.amount > 0 else '-' }}<span class="currency-symbol">$</span><span data-amount="{{ transaction.amount|abs }}">{{ "%.2f"|format(transaction.amount|abs) }}</span>
-                                        </td>
+                                        <td colspan="4" class="text-center">Loading transactions...</td>
                                     </tr>
-                                    {% else %}
-                                    <tr>
-                                        <td colspan="4" class="text-center">No transactions found</td>
-                                    </tr>
-                                    {% endfor %}
                                 </tbody>
                             </table>
                         </div>
@@ -626,7 +626,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 row.className = transaction.amount < 0 ? 'table-danger' : 'table-success';
                 
                 row.innerHTML = `
-                    <td>${formatDate(transaction.date)}</td>
+                    <td>${transaction.date}</td>
                     <td>${transaction.description}</td>
                     <td>
                         <span class="badge rounded-pill" style="background-color: ${transaction.category_color}">
@@ -757,7 +757,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 row.className = transaction.amount < 0 ? 'table-danger' : 'table-success';
                 
                 row.innerHTML = `
-                    <td>${formatDate(transaction.date)}</td>
+                    <td>${transaction.date}</td>
                     <td>${transaction.description}</td>
                     <td>
                         <span class="badge rounded-pill" style="background-color: ${transaction.category_color}">
@@ -866,9 +866,9 @@ document.addEventListener('DOMContentLoaded', function() {
     function formatDate(dateStr) {
         const date = new Date(dateStr);
         return date.toLocaleDateString('en-US', {
-            weekday: 'short',
-            month: 'short',
-            day: 'numeric'
+            year: 'numeric',
+            month: '2-digit',
+            day: '2-digit'
         });
     }
 
@@ -942,21 +942,87 @@ document.addEventListener('DOMContentLoaded', function() {
                 return date.toLocaleString('default', { month: 'short' });
             });
             monthlyChart.update();
+
+            // Update transactions for the current month
+            //const currentMonth = new Date().getMonth() + 1;
+            updateMonthlyTransactions(year, currentMonth);
         } catch (error) {
             console.error('Error fetching monthly overview:', error);
         }
     }
 
-    // Add event listener for year selection
+    // Function to update monthly transactions list
+    async function updateMonthlyTransactions(year, month) {
+        try {
+            const response = await fetch(`/api/monthly-transactions/${year}/${month}`);
+            if (!response.ok) {
+                throw new Error('Failed to fetch monthly transactions');
+            }
+            const transactions = await response.json();
+            
+            const tbody = document.getElementById('monthlyTransactionsList');
+            if (transactions.length === 0) {
+                tbody.innerHTML = `
+                    <tr>
+                        <td colspan="4" class="text-center">No transactions found</td>
+                    </tr>`;
+                return;
+            }
+
+            tbody.innerHTML = transactions.map(transaction => `
+                <tr>
+                    <td>${formatDate(transaction.date)}</td>
+                    <td>${transaction.description}</td>
+                    <td>
+                        <span class="badge bg-${transaction.amount > 0 ? 'success' : 'danger'}">
+                            ${transaction.category}
+                        </span>
+                    </td>
+                    <td class="text-end ${transaction.amount > 0 ? 'text-success' : 'text-danger'}">
+                        ${transaction.amount > 0 ? '+' : '-'}$${Math.abs(transaction.amount).toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}
+                    </td>
+                </tr>
+            `).join('');
+        } catch (error) {
+            console.error('Error updating monthly transactions:', error);
+            document.getElementById('monthlyTransactionsList').innerHTML = `
+                <tr>
+                    <td colspan="4" class="text-center text-danger">Error loading transactions</td>
+                </tr>`;
+        }
+    }
+
+    // Function to update monthly overview and transactions
+    function updateOverview() {
+        const selectedYear = parseInt(monthlyOverviewYearSelect.value);
+        const selectedMonth = parseInt(monthlyOverviewMonthSelect.value);
+        updateMonthlyOverview(selectedYear);
+        updateMonthlyTransactions(selectedYear, selectedMonth);
+    }
+
+    // Initialize monthly overview selectors
     const monthlyOverviewYearSelect = document.getElementById('monthlyOverviewYearSelect');
-    monthlyOverviewYearSelect.addEventListener('change', function() {
-        updateMonthlyOverview(this.value);
-    });
+    const monthlyOverviewMonthSelect = document.getElementById('monthlyOverviewMonthSelect');
+    const currentYear = new Date().getFullYear();
+    //const currentMonth = new Date().getMonth() + 1;
+    
+    // Populate year options (current year and 4 years back)
+    for (let year = currentYear; year >= currentYear - 4; year--) {
+        const option = document.createElement('option');
+        option.value = year;
+        option.textContent = year;
+        monthlyOverviewYearSelect.appendChild(option);
+    }
 
-    // Initial load with current year
-    const currentYearSelForMonth = new Date().getFullYear();
-    updateMonthlyOverview(currentYearSelForMonth);
+    // Set current month as default
+    monthlyOverviewMonthSelect.value = currentMonth;
 
+    // Add event listeners for year and month selection
+    monthlyOverviewYearSelect.addEventListener('change', updateOverview);
+    monthlyOverviewMonthSelect.addEventListener('change', updateOverview);
+
+    // Initial load
+    updateOverview();
     // Yearly Chart
     const yearlyCtx = document.getElementById('yearlyChart').getContext('2d');
     const yearlyData = {
@@ -1163,7 +1229,7 @@ document.addEventListener('DOMContentLoaded', function() {
     });
 
     // Initial load with current year
-    //const currentYearSelForMonth = new Date().getFullYear();
+    const currentYearSelForMonth = new Date().getFullYear();
     updateMonthlyOverview(currentYearSelForMonth);
 });
 

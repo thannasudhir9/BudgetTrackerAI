@@ -1023,8 +1023,8 @@ This link will expire in 1 hour.
                 BudgetTransaction.user_id == current_user.id,
                 BudgetTransaction.date >= start_date,
                 BudgetTransaction.date < end_date
-            ).all()
-        
+            ).order_by(BudgetTransaction.date.desc()).all()
+
             # Group transactions by day
             transactions_by_day = {}
             for transaction in transactions:
@@ -1430,5 +1430,42 @@ This link will expire in 1 hour.
                 'expense': expense_data
             }
         })
+
+    @app.route('/api/monthly-transactions/<int:year>/<int:month>')
+    @login_required
+    def get_monthly_transactions(year, month):
+        try:
+            # Calculate start and end dates based on month
+            if month == 0:  # All months
+                start_date = datetime(year, 1, 1)
+                end_date = datetime(year + 1, 1, 1)
+            else:
+                start_date = datetime(year, month, 1)
+                if month == 12:
+                    end_date = datetime(year + 1, 1, 1)
+                else:
+                    end_date = datetime(year, month + 1, 1)
+
+            # Get transactions for the specified period
+            transactions = BudgetTransaction.query.filter(
+                BudgetTransaction.user_id == current_user.id,
+                BudgetTransaction.date >= start_date,
+                BudgetTransaction.date < end_date
+            ).order_by(BudgetTransaction.date.desc()).all()
+
+            # Convert to JSON format
+            transactions_data = []
+            for transaction in transactions:
+                transactions_data.append({
+                    'date': transaction.date.strftime('%Y-%m-%d'),
+                    'description': transaction.description,
+                    'category': transaction.category,
+                    'amount': float(transaction.amount)
+                })
+
+            return jsonify(transactions_data)
+
+        except Exception as e:
+            return jsonify({'error': str(e)}), 500
 
 init_routes(app)
