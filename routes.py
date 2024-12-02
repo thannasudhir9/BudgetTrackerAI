@@ -1111,6 +1111,43 @@ This link will expire in 1 hour.
         except Exception as e:
             return jsonify({'error': str(e)}), 500
 
+    @app.route('/api/monthly-overview/<int:year>')
+    @login_required
+    def get_monthly_overview(year):
+        try:
+            # Calculate start and end dates for the year
+            start_date = datetime(year, 1, 1)
+            end_date = datetime(year + 1, 1, 1)
+
+            # Get all transactions for the year
+            transactions = BudgetTransaction.query.filter(
+                BudgetTransaction.user_id == current_user.id,
+                BudgetTransaction.date >= start_date,
+                BudgetTransaction.date < end_date
+            ).order_by(BudgetTransaction.date).all()
+
+            # Initialize monthly data
+            monthly_data = []
+            for month in range(1, 13):
+                monthly_data.append({
+                    'month': month,
+                    'income': 0,
+                    'expenses': 0
+                })
+
+            # Calculate monthly totals
+            for transaction in transactions:
+                month_idx = transaction.date.month - 1
+                if transaction.amount > 0:
+                    monthly_data[month_idx]['income'] += float(transaction.amount)
+                else:
+                    monthly_data[month_idx]['expenses'] += abs(float(transaction.amount))
+
+            return jsonify(monthly_data)
+
+        except Exception as e:
+            return jsonify({'error': str(e)}), 500
+
     @app.route('/api/monthly-overview-by-year/<int:year>')
     @login_required
     def get_monthly_overview_by_year(year):
