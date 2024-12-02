@@ -3,7 +3,7 @@ from flask_login import LoginManager, UserMixin, login_user, login_required, log
 from werkzeug.security import generate_password_hash, check_password_hash
 from datetime import datetime, timedelta, date
 from decimal import Decimal
-from models import db, User, BudgetTransaction, UserRole, TransactionCategory
+from models import db, User, BudgetTransaction, UserRole, TransactionCategory, UserBudget
 import json
 import random
 from enum import Enum
@@ -47,6 +47,85 @@ def init_routes(app):
         generate_color_for_category=generate_color_for_category,
         UserRole=UserRole
     )
+
+    # Budget Utilization Metrics Route
+    @app.route('/api/utilization-metrics/<int:year>/<int:month>')
+    @login_required
+    def get_utilization_metrics(year, month):
+        try:
+            # Get start and end dates for the month
+            start_date = datetime(year, month, 1)
+            if month == 12:
+                end_date = datetime(year + 1, 1, 1) - timedelta(days=1)
+            else:
+                end_date = datetime(year, month + 1, 1) - timedelta(days=1)
+
+            # Get user's budget settings or use defaults
+            user_budget = UserBudget.query.filter_by(user_id=current_user.id).first()
+            
+            # Use default values if no budget is set
+            monthly_budget = float(user_budget.monthly_budget) if user_budget and user_budget.monthly_budget else 5000
+            quarterly_budget = float(user_budget.quarterly_budget) if user_budget and user_budget.quarterly_budget else 15000
+            yearly_budget = float(user_budget.yearly_budget) if user_budget and user_budget.yearly_budget else 60000
+
+            # Calculate monthly spending (for the selected month)
+            monthly_spending = db.session.query(func.sum(BudgetTransaction.amount))\
+                .filter(BudgetTransaction.user_id == current_user.id)\
+                .filter(BudgetTransaction.date >= start_date)\
+                .filter(BudgetTransaction.date <= end_date)\
+                .filter(BudgetTransaction.amount < 0)\
+                .scalar()
+            monthly_spending = abs(monthly_spending) if monthly_spending else 0
+
+            # Calculate quarterly spending (current quarter)
+            quarter = (month - 1) // 3 + 1
+            quarter_start = datetime(year, 3 * quarter - 2, 1)
+            if quarter == 4:
+                quarter_end = datetime(year + 1, 1, 1) - timedelta(days=1)
+            else:
+                quarter_end = datetime(year, 3 * quarter + 1, 1) - timedelta(days=1)
+
+            quarterly_spending = db.session.query(func.sum(BudgetTransaction.amount))\
+                .filter(BudgetTransaction.user_id == current_user.id)\
+                .filter(BudgetTransaction.date >= quarter_start)\
+                .filter(BudgetTransaction.date <= quarter_end)\
+                .filter(BudgetTransaction.amount < 0)\
+                .scalar()
+            quarterly_spending = abs(quarterly_spending) if quarterly_spending else 0
+
+            # Calculate yearly spending (for the selected year)
+            year_start = datetime(year, 1, 1)
+            year_end = datetime(year, 12, 31)
+            yearly_spending = db.session.query(func.sum(BudgetTransaction.amount))\
+                .filter(BudgetTransaction.user_id == current_user.id)\
+                .filter(BudgetTransaction.date >= year_start)\
+                .filter(BudgetTransaction.date <= year_end)\
+                .filter(BudgetTransaction.amount < 0)\
+                .scalar()
+            yearly_spending = abs(yearly_spending) if yearly_spending else 0
+
+            # Print debug information
+            print(f"Monthly spending: {monthly_spending} (Budget: {monthly_budget})")
+            print(f"Quarterly spending: {quarterly_spending} (Budget: {quarterly_budget})")
+            print(f"Yearly spending: {yearly_spending} (Budget: {yearly_budget})")
+
+            return jsonify({
+                'monthly': {
+                    'spent': monthly_spending,
+                    'budget': monthly_budget
+                },
+                'quarterly': {
+                    'spent': quarterly_spending,
+                    'budget': quarterly_budget
+                },
+                'yearly': {
+                    'spent': yearly_spending,
+                    'budget': yearly_budget
+                }
+            })
+        except Exception as e:
+            print(f"Error in get_utilization_metrics: {str(e)}")
+            return jsonify({'error': str(e)}), 500
 
     # Home Route
     @app.route('/')
@@ -1082,7 +1161,7 @@ This link will expire in 1 hour.
                 BudgetTransaction.user_id == current_user.id,
                 BudgetTransaction.date >= week_start,
                 BudgetTransaction.date <= week_end
-            ).order_by(BudgetTransaction.date).all()
+            ).order_by(BudgetTransaction.date.desc()).all()
             
             # Group transactions by day
             daily_data = []
@@ -1192,21 +1271,25 @@ This link will expire in 1 hour.
     @login_required
     def get_daily_transactions(year, month):
         try:
-            # Calculate start and end dates for the month
-            start_date = datetime(year, month, 1)
-            if month == 12:
+            # Calculate start and end dates based on month
+            if month == 0:  # All months
+                start_date = datetime(year, 1, 1)
                 end_date = datetime(year + 1, 1, 1)
             else:
-                end_date = datetime(year, month + 1, 1)
+                start_date = datetime(year, month, 1)
+                if month == 12:
+                    end_date = datetime(year + 1, 1, 1)
+                else:
+                    end_date = datetime(year, month + 1, 1)
 
-            # Get all transactions for the month
+            # Get transactions for the specified period
             transactions = BudgetTransaction.query.filter(
                 BudgetTransaction.user_id == current_user.id,
                 BudgetTransaction.date >= start_date,
                 BudgetTransaction.date < end_date
             ).order_by(BudgetTransaction.date.desc()).all()
 
-            # Convert transactions to JSON-serializable format
+            # Convert to JSON format
             transactions_data = []
             for transaction in transactions:
                 category_color = generate_color_for_category(transaction.category)
@@ -1466,6 +1549,41 @@ This link will expire in 1 hour.
             return jsonify(transactions_data)
 
         except Exception as e:
+            return jsonify({'error': str(e)}), 500
+
+    @app.route('/api/save-budget', methods=['POST'])
+    @login_required
+    def save_budget():
+        try:
+            data = request.get_json()
+            budget_type = data.get('type')
+            amount = data.get('amount')
+            print(f"Saving budget - Type: {budget_type}, Amount: {amount}")
+            
+            if not budget_type or not amount:
+                return jsonify({'error': 'Missing budget type or amount'}), 400
+
+            # Get existing budget or create new one
+            user_budget = UserBudget.query.filter_by(user_id=current_user.id).first()
+            if not user_budget:
+                user_budget = UserBudget(user_id=current_user.id)
+                db.session.add(user_budget)
+
+            # Update the appropriate budget field
+            if budget_type == 'monthly':
+                user_budget.monthly_budget = amount
+            elif budget_type == 'quarterly':
+                user_budget.quarterly_budget = amount
+            elif budget_type == 'yearly':
+                user_budget.yearly_budget = amount
+            else:
+                return jsonify({'error': 'Invalid budget type'}), 400
+
+            db.session.commit()
+            return jsonify({'message': 'Budget updated successfully'})
+
+        except Exception as e:
+            db.session.rollback()
             return jsonify({'error': str(e)}), 500
 
 init_routes(app)

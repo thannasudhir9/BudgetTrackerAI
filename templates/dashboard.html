@@ -2,6 +2,120 @@
 
 {% block title %}Dashboard{% endblock %}
 
+{% block styles %}
+<style>
+    /* Budget Utilization Styles */
+    .gauge-container {
+        position: relative;
+        height: 200px;
+        margin: 0 auto;
+        max-width: 300px;
+    }
+
+    .card-body.text-center {
+        padding: 1.5rem;
+    }
+
+    .budget-meter {
+        background-color: #f8f9fa;
+        border-radius: 10px;
+        padding: 1.5rem;
+        transition: all 0.3s ease;
+    }
+
+    .budget-meter:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+    }
+
+    .budget-meter h6.card-title {
+        color: #495057;
+        font-weight: 600;
+        margin-bottom: 1.5rem;
+    }
+
+    .budget-info {
+        margin-top: 1.5rem;
+    }
+
+    .budget-info p {
+        margin-bottom: 0.5rem;
+        font-size: 0.95rem;
+    }
+
+    .budget-amount {
+        font-weight: 600;
+        font-size: 1.1rem;
+    }
+
+    #monthlySpent, #quarterlySpent, #yearlySpent {
+        color: #dc3545;
+    }
+
+    #monthlyBudget, #quarterlyBudget, #yearlyBudget {
+        color: #0d6efd;
+    }
+
+    #monthlyPercentage, #quarterlyPercentage, #yearlyPercentage {
+        font-size: 1.2rem;
+        font-weight: 700;
+        color: #198754;
+    }
+
+    .budget-meter .btn-outline-primary {
+        margin-top: 1rem;
+        padding: 0.375rem 1rem;
+        font-size: 0.875rem;
+    }
+
+    .budget-meter .btn-outline-primary:hover {
+        background-color: #0d6efd;
+        color: white;
+    }
+
+    /* Gauge colors */
+    .gauge-green {
+        color: #198754;
+    }
+
+    .gauge-yellow {
+        color: #ffc107;
+    }
+
+    .gauge-red {
+        color: #dc3545;
+    }
+
+    .spent-amount {
+        color: #dc3545;
+        font-weight: bold;
+    }
+    .budget-amount {
+        color: #28a745;
+        font-weight: bold;
+    }
+    .utilization-percentage {
+        font-size: 1.2em;
+        font-weight: bold;
+    }
+    .utilization-low {
+        color: #28a745;
+    }
+    .utilization-medium {
+        color: #ffc107;
+    }
+    .utilization-high {
+        color: #dc3545;
+    }
+    .gauge-container {
+        background-color: #f8f9fa;
+        border-radius: 10px;
+        padding: 15px;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+</style>
+{% endblock %}
+
 {% block content %}
 <style>
     @media print {
@@ -19,7 +133,8 @@
         }
     }
 </style>
-
+<script src="{{ url_for('static', filename='js/utilizationmetrics.js') }}"></script>
+<script src="{{ url_for('static', filename='js/downloadPDF.js') }}"></script>
 <div class="container py-4" id="dashboard-content">
     <div class="d-flex justify-content-between align-items-center mb-4">
         <h2 class="mb-0">Dashboard</h2>
@@ -200,7 +315,7 @@
 
     <h2 class="mb-4">Overview By Daily, Weekly, Monthly, Yearly</h2>
 
-    <div class="container mt-4">
+    <div class="container-fluid mt-4">
         <div class="row">
             <!-- Daily Chart -->
             <div class="col-md-6 mb-4">
@@ -320,7 +435,7 @@
             <div class="card border-0 shadow-sm h-100">
                 <div class="card-body">
                     <div class="d-flex justify-content-between align-items-center mb-4">
-                        <h5 class="card-title mb-0">Monthly Overview ({{ monthly_data[0].month }} - {{ monthly_data[-1].month }})</h5>
+                        <h5 class="card-title mb-0">Monthly Overview ({{ current_year }})</h5>
                         <div class="d-flex gap-2">
                             <select id="monthlyOverviewYearSelect" class="form-select form-select-sm" style="width: auto;">
                                 <!-- Will be populated by JavaScript -->
@@ -376,7 +491,7 @@
             <div class="card border-0 shadow-sm h-100">
                 <div class="card-body">
                     <div class="d-flex justify-content-between align-items-center mb-4">
-                        <h5 class="card-title mb-0">Yearly Overview ({{ yearly_data[0].year }} - {{ yearly_data[-1].year }})</h5>
+                        <h5 class="card-title mb-0">Yearly Overview ({{ current_year }})</h5>
                     </div>
                     <div style="height: 300px;">
                         <canvas id="yearlyChart"></canvas>
@@ -421,8 +536,111 @@
             </div>
         </div>
     </div>
+
+
+<!-- Budget Utilization Section -->
+<div class="row mt-4">
+    <div class="col-12">
+        <div class="card border-0 shadow-sm">
+            <div class="card-header bg-white">
+                <h5 class="card-title mb-0">Budget Utilization</h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <!-- Monthly Budget Meter -->
+                    <div class="col-md-4">
+                        <div class="card">
+                            <div class="card-body">
+                                <h5 class="card-title">Monthly Budget</h5>
+                                <div class="gauge-container">
+                                    <canvas id="monthlyGauge"></canvas>
+                                </div>
+                                <div class="text-center mt-3">
+                                    <p>Spent: <span id="monthlySpent" class="spent-amount">$0</span></p>
+                                    <p>Budget: <span id="monthlyBudget" class="budget-amount">$0</span></p>
+                                    <p>Utilization: <span id="monthlyPercentage" class="utilization-percentage">0%</span></p>
+                                    <button class="btn btn-sm btn-outline-primary" onclick="editBudget('monthly')">
+                                        <i class="bi bi-pencil-square"></i> Edit Budget
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Quarterly Budget Meter -->
+                    <div class="col-md-4">
+                        <div class="card">
+                            <div class="card-body">
+                                <h5 class="card-title">Quarterly Budget</h5>
+                                <div class="gauge-container">
+                                    <canvas id="quarterlyGauge"></canvas>
+                                </div>
+                                <div class="text-center mt-3">
+                                    <p>Spent: <span id="quarterlySpent" class="spent-amount">$0</span></p>
+                                    <p>Budget: <span id="quarterlyBudget" class="budget-amount">$0</span></p>
+                                    <p>Utilization: <span id="quarterlyPercentage" class="utilization-percentage">0%</span></p>
+                                    <button class="btn btn-sm btn-outline-primary" onclick="editBudget('quarterly')">
+                                        <i class="bi bi-pencil-square"></i> Edit Budget
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Yearly Budget Meter -->
+                    <div class="col-md-4">
+                        <div class="card">
+                            <div class="card-body">
+                                <h5 class="card-title">Yearly Budget</h5>
+                                <div class="gauge-container">
+                                    <canvas id="yearlyGauge"></canvas>
+                                </div>
+                                <div class="text-center mt-3">
+                                    <p>Spent: <span id="yearlySpent" class="spent-amount">$0</span></p>
+                                    <p>Budget: <span id="yearlyBudget" class="budget-amount">$0</span></p>
+                                    <p>Utilization: <span id="yearlyPercentage" class="utilization-percentage">0%</span></p>
+                                    <button class="btn btn-sm btn-outline-primary" onclick="editBudget('yearly')">
+                                        <i class="bi bi-pencil-square"></i> Edit Budget
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
 </div>
-{% endblock %}
+
+<!-- Budget Edit Modal -->
+<div class="modal fade" id="budgetEditModal" tabindex="-1" aria-labelledby="budgetEditModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="budgetEditModalLabel">Edit Budget</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <form id="budgetEditForm">
+                    <input type="hidden" id="editBudgetType" name="budgetType">
+                    <div class="mb-3">
+                        <label for="budgetAmount" class="form-label">Budget Amount</label>
+                        <div class="input-group">
+                            <span class="input-group-text">$</span>
+                            <input type="number" class="form-control" id="budgetAmount" name="budgetAmount" min="0" step="0.01" required>
+                        </div>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-primary" onclick="saveBudget()">Save Budget</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% endblock content %}
 
 {% block extra_js %}
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
@@ -629,9 +847,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     <td>${transaction.date}</td>
                     <td>${transaction.description}</td>
                     <td>
-                        <span class="badge rounded-pill" style="background-color: ${transaction.category_color}">
-                            ${transaction.category}
-                        </span>
+                        <span class="badge bg-secondary">${transaction.category}</span>
                     </td>
                     <td class="text-end">${formatCurrency(transaction.amount)}</td>
                 `;
@@ -760,9 +976,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     <td>${transaction.date}</td>
                     <td>${transaction.description}</td>
                     <td>
-                        <span class="badge rounded-pill" style="background-color: ${transaction.category_color}">
-                            ${transaction.category}
-                        </span>
+                        <span class="badge bg-secondary">${transaction.category}</span>
                     </td>
                     <td class="text-end">${formatCurrency(transaction.amount)}</td>
                 `;
@@ -998,6 +1212,7 @@ document.addEventListener('DOMContentLoaded', function() {
         const selectedMonth = parseInt(monthlyOverviewMonthSelect.value);
         updateMonthlyOverview(selectedYear);
         updateMonthlyTransactions(selectedYear, selectedMonth);
+        updateUtilizationMeters(selectedYear, selectedMonth);
     }
 
     // Initialize monthly overview selectors
@@ -1023,6 +1238,79 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // Initial load
     updateOverview();
+
+    // Update utilization meters when page loads and when month/year changes
+    function updateUtilizationMeters(year, month) {
+        console.log('year' + year);
+        console.log('month' + month);
+        fetch(`/api/utilization-metrics/${year}/${month}`)
+            .then(response => response.json())
+            .then(data => {
+                console.log(' data.monthly.spent' +  data.monthly.spent);
+                // Update Monthly Meter
+                updateMeter('monthly', data.monthly);
+                
+                // Update Quarterly Meter
+                updateMeter('quarterly', data.quarterly); 
+                
+                // Update Yearly Meter
+                updateMeter('yearly', data.yearly);
+            })
+            .catch(error => console.error('Error fetching utilization metrics:', error));
+    }
+
+    function updateMeter(type, data) {
+        const spentElement = document.getElementById(`${type}Spent`);
+        const budgetElement = document.getElementById(`${type}Budget`);
+        const percentageElement = document.getElementById(`${type}Percentage`);
+        const percentage = (data.spent / data.budget) * 100;
+
+        // Update text displays
+        if (spentElement) spentElement.textContent = formatCurrency(data.spent);
+        if (budgetElement) budgetElement.textContent = formatCurrency(data.budget);
+        if (percentageElement) percentageElement.textContent = `${percentage.toFixed(1)}%`;
+
+        // Update gauge if it exists
+        if (window.gauges && window.gauges[type]) {
+            const gauge = window.gauges[type];
+            gauge.data.datasets[0].data = [percentage, Math.max(0, 100 - percentage)];
+            
+            // Update gauge colors based on percentage
+            let color;
+            if (percentage >= 90) {
+                color = 'rgba(220, 53, 69, 0.8)'; // Red
+            } else if (percentage >= 75) {
+                color = 'rgba(255, 193, 7, 0.8)'; // Yellow
+            } else {
+                color = 'rgba(40, 167, 69, 0.8)'; // Green
+            }
+            gauge.data.datasets[0].backgroundColor[0] = color;
+            gauge.update();
+        }
+    }
+
+    function getUtilizationClass(percentage) {
+        if (percentage > 90) return 'bg-danger';
+        if (percentage > 75) return 'bg-warning';
+        return 'bg-success';
+    }
+
+    // Add event listeners for utilization meters
+    document.getElementById('monthSelect').addEventListener('change', function() {
+        const month = this.value;
+        const year = document.getElementById('yearSelect').value;
+        updateUtilizationMeters(year, month);
+    });
+
+    document.getElementById('yearSelect').addEventListener('change', function() {
+        const month = document.getElementById('monthSelect').value;
+        const year = this.value;
+        updateUtilizationMeters(year, month);
+    });
+
+    // Initial update of utilization meters
+    updateUtilizationMeters(currentYearSel, currentMonth);
+
     // Yearly Chart
     const yearlyCtx = document.getElementById('yearlyChart').getContext('2d');
     const yearlyData = {
@@ -1233,69 +1521,6 @@ document.addEventListener('DOMContentLoaded', function() {
     updateMonthlyOverview(currentYearSelForMonth);
 });
 
-// Show loading indicator
-function downloadPageAsPDF() {
-    const loadingDiv = document.createElement('div');
-    loadingDiv.className = 'position-fixed top-0 start-0 w-100 h-100 d-flex align-items-center justify-content-center bg-white bg-opacity-75';
-    loadingDiv.innerHTML = '<div class="spinner-border text-primary"></div>';
-    document.body.appendChild(loadingDiv);
 
-    // Initialize jsPDF
-    window.jspdf.jsPDF();
-
-    const element = document.getElementById('dashboard-content');
-    const options = {
-        scale: 2,
-        useCORS: true,
-        allowTaint: true,
-        scrollY: -window.scrollY,
-        windowWidth: element.scrollWidth
-    };
-
-    html2canvas(element, options).then(canvas => {
-        try {
-            const { jsPDF } = window.jspdf;
-            const pdf = new jsPDF('p', 'mm', 'a4');
-            
-            // Calculate dimensions
-            const imgWidth = 210; // A4 width in mm
-            const pageHeight = 295; // A4 height in mm
-            const imgHeight = (canvas.height * imgWidth) / canvas.width;
-            
-            // Add image to PDF
-            const imgData = canvas.toDataURL('image/png');
-            pdf.addImage(imgData, 'PNG', 0, 0, imgWidth, imgHeight);
-            
-            // Add more pages if content is longer than one page
-            let heightLeft = imgHeight;
-            let position = -pageHeight;
-            
-            while (heightLeft >= pageHeight) {
-                pdf.addPage();
-                pdf.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight);
-                heightLeft -= pageHeight;
-                position -= pageHeight;
-            }
-            
-            // Generate filename with date
-            const today = new Date();
-            const dateStr = today.getFullYear() +
-                          String(today.getMonth() + 1).padStart(2, '0') +
-                          String(today.getDate()).padStart(2, '0');
-            
-            // Save PDF
-            pdf.save(`BudgetReport_${dateStr}.pdf`);
-        } catch (error) {
-            console.error('Error generating PDF:', error);
-            alert('Failed to generate PDF. Please try again.');
-        } finally {
-            document.body.removeChild(loadingDiv);
-        }
-    }).catch(error => {
-        console.error('Error capturing page content:', error);
-        document.body.removeChild(loadingDiv);
-        alert('Failed to capture page content. Please try again.');
-    });
-}
 </script>
 {% endblock %}

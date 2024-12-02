@@ -54,6 +54,7 @@ class User(UserMixin, db.Model):
     # Relationships
     transactions = db.relationship('BudgetTransaction', backref='user', lazy=True)
     feedback_submissions = db.relationship('Feedback', backref=db.backref('submitted_by', lazy=True), lazy=True)
+    budgets = db.relationship('UserBudget', backref='user', lazy=True)
     
     def __init__(self, username, email, role=UserRole.NORMAL):
         self.username = username
@@ -131,6 +132,19 @@ class BudgetTransaction(db.Model):
 
     def __repr__(self):
         return f'<Transaction {self.description} {self.amount}>'
+
+class UserBudget(db.Model):
+    __tablename__ = 'user_budget'
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    monthly_budget = db.Column(db.Numeric(10, 2), nullable=True)
+    quarterly_budget = db.Column(db.Numeric(10, 2), nullable=True)
+    yearly_budget = db.Column(db.Numeric(10, 2), nullable=True)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+    def __repr__(self):
+        return f'<UserBudget user_id={self.user_id}>'
 
 class Feedback(db.Model):
     __tablename__ = 'feedback'
