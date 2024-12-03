@@ -560,7 +560,7 @@
                                     <p>Budget: <span id="monthlyBudget" class="budget-amount">$0</span></p>
                                     <p>Utilization: <span id="monthlyPercentage" class="utilization-percentage">0%</span></p>
                                     <button class="btn btn-sm btn-outline-primary" onclick="editBudget('monthly')">
-                                        <i class="bi bi-pencil-square"></i> Edit Budget
+                                        <i class="bi bi-pencil-square"></i> Set Monthly Budget
                                     </button>
                                 </div>
                             </div>
@@ -580,7 +580,7 @@
                                     <p>Budget: <span id="quarterlyBudget" class="budget-amount">$0</span></p>
                                     <p>Utilization: <span id="quarterlyPercentage" class="utilization-percentage">0%</span></p>
                                     <button class="btn btn-sm btn-outline-primary" onclick="editBudget('quarterly')">
-                                        <i class="bi bi-pencil-square"></i> Edit Budget
+                                        <i class="bi bi-pencil-square"></i> Set Quarterly Budget
                                     </button>
                                 </div>
                             </div>
@@ -600,7 +600,7 @@
                                     <p>Budget: <span id="yearlyBudget" class="budget-amount">$0</span></p>
                                     <p>Utilization: <span id="yearlyPercentage" class="utilization-percentage">0%</span></p>
                                     <button class="btn btn-sm btn-outline-primary" onclick="editBudget('yearly')">
-                                        <i class="bi bi-pencil-square"></i> Edit Budget
+                                        <i class="bi bi-pencil-square"></i> Set Yearly Budget
                                     </button>
                                 </div>
                             </div>
@@ -685,9 +685,8 @@
             <div class="mt-4">
                 <div id="healthFactors" class="small">
                     <div class="text-center">
-                        <div class="spinner-border spinner-border-sm text-primary" role="status">
-                            <span class="sr-only">Loading...</span>
-                        </div>
+                        <div class="spinner-border spinner-border-sm text-info" role="status"></div>
+                        <div class="mt-2 text-muted">Loading Financial Health Score...</div>
                     </div>
                 </div>
             </div>
@@ -697,12 +696,13 @@
                 <div class="col">
                     <div class="small text-muted">
                         <i class="fas fa-info-circle mr-1"></i>
-                        Updated in real-time
+                        Last Updated: <span id="healthScoreLastUpdate">--</span>
                     </div>
                 </div>
                 <div class="col-auto">
                     <button type="button" class="btn btn-sm btn-outline-info" onclick="updateFinancialHealth()">
-                        <i class="fas fa-sync-alt"></i>
+                        <i class="fas fa-sync-alt mr-1"></i>
+                        Update
                     </button>
                 </div>
             </div>

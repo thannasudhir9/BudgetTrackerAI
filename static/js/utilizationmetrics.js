@@ -230,38 +230,67 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     function updateFinancialHealth() {
+        // Get all the required elements
+        const scoreElement = document.getElementById('healthScore');
+        const scoreBar = document.getElementById('healthScoreBar');
+        const factorsElement = document.getElementById('healthFactors');
+        const lastUpdateElement = document.getElementById('healthScoreLastUpdate');
+
+        // Reset to loading state
+        if (scoreElement) scoreElement.textContent = '--';
+        if (scoreBar) {
+            scoreBar.style.width = '0%';
+            scoreBar.setAttribute('aria-valuenow', 0);
+            scoreBar.className = 'progress-bar';
+        }
+        if (factorsElement) {
+            factorsElement.innerHTML = `
+                <div class="text-center">
+                    <div class="spinner-border spinner-border-sm text-info" role="status"></div>
+                    <div class="mt-2 text-muted">Loading Financial Health Score...</div>
+                </div>
+            `;
+        }
+        if (lastUpdateElement) lastUpdateElement.textContent = 'Updating...';
+
+        // Fetch the financial health score
         fetch('/api/financial-health')
-            .then(response => response.json())
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error('Network response was not ok');
+                }
+                return response.json();
+            })
             .then(data => {
-                if (data.error) {
-                    throw new Error(data.error);
+                if (!data || typeof data.score === 'undefined') {
+                    throw new Error('Invalid response data');
                 }
 
                 // Update score display
-                const scoreElement = document.getElementById('healthScore');
-                const scoreBar = document.getElementById('healthScoreBar');
-                const factorsElement = document.getElementById('healthFactors');
+                if (scoreElement) {
+                    scoreElement.textContent = Math.round(data.score);
+                }
 
-                if (scoreElement && scoreBar && factorsElement) {
-                    // Update score number
-                    scoreElement.textContent = data.score;
-
-                    // Update progress bar
-                    scoreBar.style.width = `${data.score}%`;
-                    scoreBar.setAttribute('aria-valuenow', data.score);
+                // Update progress bar
+                if (scoreBar) {
+                    const score = Math.round(data.score);
+                    scoreBar.style.width = `${score}%`;
+                    scoreBar.setAttribute('aria-valuenow', score);
 
                     // Set color based on score
-                    if (data.score >= 80) {
+                    if (score >= 80) {
                         scoreBar.className = 'progress-bar bg-success';
-                    } else if (data.score >= 60) {
+                    } else if (score >= 60) {
                         scoreBar.className = 'progress-bar bg-info';
-                    } else if (data.score >= 40) {
+                    } else if (score >= 40) {
                         scoreBar.className = 'progress-bar bg-warning';
                     } else {
                         scoreBar.className = 'progress-bar bg-danger';
                     }
+                }
 
-                    // Update factors list with icons
+                // Update factors list
+                if (factorsElement && data.factors) {
                     const factorsList = Object.entries(data.factors)
                         .map(([key, value]) => {
                             let iconClass = 'text-success';
@@ -279,24 +308,42 @@ document.addEventListener('DOMContentLoaded', function() {
                         }).join('');
                     
                     factorsElement.innerHTML = factorsList;
+                }
 
-                    // Update modal details if it exists
+                // Update last updated timestamp
+                if (lastUpdateElement) {
+                    const now = new Date();
+                    const formattedDate = now.toLocaleDateString('en-US', {
+                        month: 'short',
+                        day: 'numeric',
+                        year: 'numeric'
+                    });
+                    const formattedTime = now.toLocaleTimeString('en-US', {
+                        hour: '2-digit',
+                        minute: '2-digit'
+                    });
+                    lastUpdateElement.textContent = `${formattedDate} ${formattedTime}`;
+                }
+
+                // Update modal details if they exist
+                if (data.details) {
                     const budgetScore = document.getElementById('budgetAdherenceScore');
                     const savingsScore = document.getElementById('savingsScore');
                     const diversityScore = document.getElementById('diversityScore');
 
-                    if (budgetScore && data.details) {
-                        // Update Budget Adherence
+                    if (budgetScore) {
                         const budgetPercent = (data.details.budget / 40) * 100;
                         budgetScore.style.width = `${budgetPercent}%`;
                         budgetScore.className = `progress-bar ${getScoreColorClass(budgetPercent)}`;
+                    }
 
-                        // Update Savings Rate
+                    if (savingsScore) {
                         const savingsPercent = (data.details.savings / 30) * 100;
                         savingsScore.style.width = `${savingsPercent}%`;
                         savingsScore.className = `progress-bar ${getScoreColorClass(savingsPercent)}`;
+                    }
 
-                        // Update Category Diversity
+                    if (diversityScore) {
                         const diversityPercent = (data.details.diversity / 30) * 100;
                         diversityScore.style.width = `${diversityPercent}%`;
                         diversityScore.className = `progress-bar ${getScoreColorClass(diversityPercent)}`;
@@ -305,19 +352,25 @@ document.addEventListener('DOMContentLoaded', function() {
             })
             .catch(error => {
                 console.error('Error updating financial health:', error);
-                const healthScore = document.getElementById('healthScore');
-                const healthFactors = document.getElementById('healthFactors');
                 
-                if (healthScore) {
-                    healthScore.textContent = '--';
+                if (scoreElement) {
+                    scoreElement.textContent = '--';
                 }
-                if (healthFactors) {
-                    healthFactors.innerHTML = `
-                        <div class="text-danger">
+                if (factorsElement) {
+                    factorsElement.innerHTML = `
+                        <div class="text-danger text-center">
                             <i class="fas fa-exclamation-circle mr-1"></i>
                             Error loading financial health data
                         </div>
                     `;
+                }
+                if (lastUpdateElement) {
+                    lastUpdateElement.textContent = 'Update failed';
+                }
+                if (scoreBar) {
+                    scoreBar.style.width = '0%';
+                    scoreBar.setAttribute('aria-valuenow', 0);
+                    scoreBar.className = 'progress-bar';
                 }
             });
     }
@@ -350,23 +403,26 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // Initialize components
     initModal();
-    initializeGauges();
-    initializeMetrics();
+        initializeGauges();
+        initializeMetrics();
 
-    // Add event listeners for updates
-    const monthSelect = document.getElementById('monthSelect');
-    const yearSelect = document.getElementById('yearSelect');
-    
-    if (monthSelect) {
-        monthSelect.addEventListener('change', updateUtilizationMeters);
-    }
-    if (yearSelect) {
-        yearSelect.addEventListener('change', updateUtilizationMeters);
-    }
+        // Add event listeners for updates
+        const monthSelect = document.getElementById('monthSelect');
+        const yearSelect = document.getElementById('yearSelect');
+        
+        if (monthSelect) {
+            monthSelect.addEventListener('change', updateUtilizationMeters);
+        }
+        if (yearSelect) {
+            yearSelect.addEventListener('change', updateUtilizationMeters);
+        }
 
-    // Update both metrics periodically
-    setInterval(() => {
-        updateUtilizationMeters();
+        // Initial load of financial health
         updateFinancialHealth();
-    }, 300000); // Update every 5 minutes
+
+        // Update metrics periodically
+        setInterval(() => {
+            updateUtilizationMeters();
+            updateFinancialHealth();
+        }, 300000); // Update every 5 minutes
 });
