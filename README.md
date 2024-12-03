@@ -558,3 +558,35 @@ For support and queries, please:
 - Technical debt measures
 - API response times
 - Error rates and resolution times
+
+
+
+comprehensive Financial Health Score feature for the dashboard. Here's what I've added:
+
+Financial Health API Endpoint (routes.py):
+Calculates a score out of 100 based on three main factors:
+Budget Adherence (40 points): How well you stay within your monthly budget
+Savings Rate (30 points): Percentage of income saved
+Category Diversity (30 points): How well-distributed your expenses are across categories
+Dashboard UI (dashboard.html):
+Added a new card showing:
+Overall financial health score
+Progress bar with color coding (red to green)
+Individual factor breakdowns
+Status icons for each factor
+JavaScript Integration (utilizationmetrics.js):
+Added real-time score updates
+Automatic refresh every 5 minutes
+Color-coded progress bar based on score ranges
+Error handling and fallback displays
+The Financial Health Score provides insights into:
+
+How well you're managing your budget
+Your saving habits
+Spending distribution across categories
+The score updates automatically and provides actionable insights through the factor descriptions. The progress bar changes color based on the score:
+
+Green (≥80): Excellent financial health
+Blue (≥60): Good financial health
+Yellow (≥40): Fair financial health
+Red (<40): Needs attention

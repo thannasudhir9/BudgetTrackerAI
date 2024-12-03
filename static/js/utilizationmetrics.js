@@ -229,6 +229,112 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
 
+    function updateFinancialHealth() {
+        fetch('/api/financial-health')
+            .then(response => response.json())
+            .then(data => {
+                if (data.error) {
+                    throw new Error(data.error);
+                }
+
+                // Update score display
+                const scoreElement = document.getElementById('healthScore');
+                const scoreBar = document.getElementById('healthScoreBar');
+                const factorsElement = document.getElementById('healthFactors');
+
+                if (scoreElement && scoreBar && factorsElement) {
+                    // Update score number
+                    scoreElement.textContent = data.score;
+
+                    // Update progress bar
+                    scoreBar.style.width = `${data.score}%`;
+                    scoreBar.setAttribute('aria-valuenow', data.score);
+
+                    // Set color based on score
+                    if (data.score >= 80) {
+                        scoreBar.className = 'progress-bar bg-success';
+                    } else if (data.score >= 60) {
+                        scoreBar.className = 'progress-bar bg-info';
+                    } else if (data.score >= 40) {
+                        scoreBar.className = 'progress-bar bg-warning';
+                    } else {
+                        scoreBar.className = 'progress-bar bg-danger';
+                    }
+
+                    // Update factors list with icons
+                    const factorsList = Object.entries(data.factors)
+                        .map(([key, value]) => {
+                            let iconClass = 'text-success';
+                            if (value.includes('Needs') || value.includes('Poor')) {
+                                iconClass = 'text-danger';
+                            } else if (value.includes('Fair') || value.includes('Could be')) {
+                                iconClass = 'text-warning';
+                            }
+                            return `
+                                <div class="mb-1">
+                                    <i class="fas fa-check-circle ${iconClass} mr-1"></i>
+                                    ${value}
+                                </div>
+                            `;
+                        }).join('');
+                    
+                    factorsElement.innerHTML = factorsList;
+
+                    // Update modal details if it exists
+                    const budgetScore = document.getElementById('budgetAdherenceScore');
+                    const savingsScore = document.getElementById('savingsScore');
+                    const diversityScore = document.getElementById('diversityScore');
+
+                    if (budgetScore && data.details) {
+                        // Update Budget Adherence
+                        const budgetPercent = (data.details.budget / 40) * 100;
+                        budgetScore.style.width = `${budgetPercent}%`;
+                        budgetScore.className = `progress-bar ${getScoreColorClass(budgetPercent)}`;
+
+                        // Update Savings Rate
+                        const savingsPercent = (data.details.savings / 30) * 100;
+                        savingsScore.style.width = `${savingsPercent}%`;
+                        savingsScore.className = `progress-bar ${getScoreColorClass(savingsPercent)}`;
+
+                        // Update Category Diversity
+                        const diversityPercent = (data.details.diversity / 30) * 100;
+                        diversityScore.style.width = `${diversityPercent}%`;
+                        diversityScore.className = `progress-bar ${getScoreColorClass(diversityPercent)}`;
+                    }
+                }
+            })
+            .catch(error => {
+                console.error('Error updating financial health:', error);
+                const healthScore = document.getElementById('healthScore');
+                const healthFactors = document.getElementById('healthFactors');
+                
+                if (healthScore) {
+                    healthScore.textContent = '--';
+                }
+                if (healthFactors) {
+                    healthFactors.innerHTML = `
+                        <div class="text-danger">
+                            <i class="fas fa-exclamation-circle mr-1"></i>
+                            Error loading financial health data
+                        </div>
+                    `;
+                }
+            });
+    }
+
+    // Helper function to get color class based on score percentage
+    function getScoreColorClass(percentage) {
+        if (percentage >= 80) return 'bg-success';
+        if (percentage >= 60) return 'bg-info';
+        if (percentage >= 40) return 'bg-warning';
+        return 'bg-danger';
+    }
+
+    function initializeMetrics() {
+        updateUtilizationMeters();
+        updateFinancialHealth();
+    }
+
     // Helper function to format currency
     function formatCurrency(amount) {
         return new Intl.NumberFormat('en-US', {
@@ -245,7 +351,7 @@ document.addEventListener('DOMContentLoaded', function() {
     // Initialize components
     initModal();
     initializeGauges();
-    updateUtilizationMeters();
+    initializeMetrics();
 
     // Add event listeners for updates
     const monthSelect = document.getElementById('monthSelect');
@@ -257,4 +363,10 @@ document.addEventListener('DOMContentLoaded', function() {
     if (yearSelect) {
         yearSelect.addEventListener('change', updateUtilizationMeters);
     }
+
+    // Update both metrics periodically
+    setInterval(() => {
+        updateUtilizationMeters();
+        updateFinancialHealth();
+    }, 300000); // Update every 5 minutes
 });

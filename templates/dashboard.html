@@ -640,6 +640,129 @@
     </div>
 </div>
 
+
+
+
+<!-- Financial Health Score Card -->
+<div class="col-xl-4 col-md-6 mb-4">
+    <div class="card border-left-info shadow h-100">
+        <div class="card-header py-3 d-flex flex-row align-items-center justify-content-between">
+            <h6 class="m-0 font-weight-bold text-primary">Financial Health Score</h6>
+            <div class="dropdown no-arrow">
+                <a class="dropdown-toggle" href="#" role="button" id="healthInfoDropdown" data-toggle="dropdown">
+                    <i class="fas fa-info-circle fa-sm fa-fw text-gray-400"></i>
+                </a>
+                <div class="dropdown-menu dropdown-menu-right shadow animated--fade-in">
+                    <div class="dropdown-header">Score Components:</div>
+                    <div class="dropdown-item">Budget Adherence (40%)</div>
+                    <div class="dropdown-item">Savings Rate (30%)</div>
+                    <div class="dropdown-item">Category Diversity (30%)</div>
+                </div>
+            </div>
+        </div>
+        <div class="card-body">
+            <div class="row no-gutters align-items-center">
+                <div class="col mr-2">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col-auto">
+                            <div class="h2 mb-0 mr-3 font-weight-bold text-gray-800">
+                                <span id="healthScore">--</span><span class="small">/100</span>
+                            </div>
+                        </div>
+                        <div class="col">
+                            <div class="progress progress-sm mr-2">
+                                <div id="healthScoreBar" class="progress-bar" role="progressbar" 
+                                     style="width: 0%" aria-valuenow="0" aria-valuemin="0" 
+                                     aria-valuemax="100"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-auto">
+                    <i class="fas fa-heartbeat fa-2x text-gray-300"></i>
+                </div>
+            </div>
+            <div class="mt-4">
+                <div id="healthFactors" class="small">
+                    <div class="text-center">
+                        <div class="spinner-border spinner-border-sm text-primary" role="status">
+                            <span class="sr-only">Loading...</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="card-footer bg-light">
+            <div class="row align-items-center">
+                <div class="col">
+                    <div class="small text-muted">
+                        <i class="fas fa-info-circle mr-1"></i>
+                        Updated in real-time
+                    </div>
+                </div>
+                <div class="col-auto">
+                    <button type="button" class="btn btn-sm btn-outline-info" onclick="updateFinancialHealth()">
+                        <i class="fas fa-sync-alt"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Score Details Modal -->
+<div class="modal fade" id="healthScoreDetails" tabindex="-1" role="dialog">
+    <div class="modal-dialog" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Financial Health Score Details</h5>
+                <button type="button" class="close" data-dismiss="modal">
+                    <span>&times;</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                <div class="score-details">
+                    <!-- Budget Adherence -->
+                    <div class="mb-4">
+                        <h6 class="font-weight-bold">Budget Adherence (40%)</h6>
+                        <div class="progress mb-2">
+                            <div id="budgetAdherenceScore" class="progress-bar" role="progressbar"></div>
+                        </div>
+                        <small class="text-muted">
+                            How well you stay within your monthly budget limits
+                        </small>
+                    </div>
+                    
+                    <!-- Savings Rate -->
+                    <div class="mb-4">
+                        <h6 class="font-weight-bold">Savings Rate (30%)</h6>
+                        <div class="progress mb-2">
+                            <div id="savingsScore" class="progress-bar" role="progressbar"></div>
+                        </div>
+                        <small class="text-muted">
+                            Percentage of income being saved
+                        </small>
+                    </div>
+                    
+                    <!-- Category Diversity -->
+                    <div class="mb-4">
+                        <h6 class="font-weight-bold">Category Diversity (30%)</h6>
+                        <div class="progress mb-2">
+                            <div id="diversityScore" class="progress-bar" role="progressbar"></div>
+                        </div>
+                        <small class="text-muted">
+                            How well-distributed your expenses are across categories
+                        </small>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+            </div>
+        </div>
+    </div>
+</div>
+
 {% endblock content %}
 
 {% block extra_js %}

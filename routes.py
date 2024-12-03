@@ -1586,4 +1586,109 @@ This link will expire in 1 hour.
             db.session.rollback()
             return jsonify({'error': str(e)}), 500
 
+    @app.route('/api/financial-health', methods=['GET'])
+    @login_required
+    def get_financial_health():
+        try:
+            # Get current date info
+            today = datetime.now()
+            current_year = today.year
+            current_month = today.month
+
+            # Get user's budget settings
+            user_budget = UserBudget.query.filter_by(user_id=current_user.id).first()
+            if not user_budget:
+                return jsonify({
+                    'score': 70,  # Default baseline score
+                    'factors': {
+                        'budget_adherence': 'No budget set',
+                        'spending_trend': 'Insufficient data',
+                        'savings_rate': 'No savings data',
+                        'expense_diversity': 'Insufficient data'
+                    }
+                })
+
+            # Calculate scores for different factors
+            scores = {}
+
+            # 1. Budget Adherence (40 points)
+            monthly_budget = float(user_budget.monthly_budget) if user_budget.monthly_budget else 5000
+            start_date = datetime(current_year, current_month, 1)
+            end_date = (datetime(current_year, current_month + 1, 1) if current_month < 12 
+                       else datetime(current_year + 1, 1, 1)) - timedelta(days=1)
+            
+            monthly_spending = abs(db.session.query(func.sum(BudgetTransaction.amount))
+                .filter(BudgetTransaction.user_id == current_user.id)
+                .filter(BudgetTransaction.date >= start_date)
+                .filter(BudgetTransaction.date <= end_date)
+                .filter(BudgetTransaction.amount < 0)
+                .scalar() or 0)
+            
+            budget_ratio = monthly_spending / monthly_budget if monthly_budget > 0 else 1
+            scores['budget'] = max(0, 40 - (max(0, budget_ratio - 0.75) * 100))
+
+            # 2. Savings Rate (30 points)
+            total_income = abs(db.session.query(func.sum(BudgetTransaction.amount))
+                .filter(BudgetTransaction.user_id == current_user.id)
+                .filter(BudgetTransaction.date >= start_date)
+                .filter(BudgetTransaction.date <= end_date)
+                .filter(BudgetTransaction.amount > 0)
+                .scalar() or 0)
+            
+            savings_rate = 0 if total_income == 0 else max(0, (total_income - monthly_spending) / total_income)
+            scores['savings'] = min(30, savings_rate * 100)
+
+            # 3. Category Diversity (30 points)
+            category_expenses = db.session.query(
+                BudgetTransaction.category,
+                func.sum(BudgetTransaction.amount)
+            ).filter(
+                BudgetTransaction.user_id == current_user.id,
+                BudgetTransaction.date >= start_date,
+                BudgetTransaction.date <= end_date,
+                BudgetTransaction.amount < 0
+            ).group_by(BudgetTransaction.category).all()
+
+            scores['diversity'] = 30  # Default full score
+            if category_expenses:
+                total_expense = sum(abs(float(amount)) for _, amount in category_expenses)
+                if total_expense > 0:
+                    for _, amount in category_expenses:
+                        # Reduce score if any category exceeds 40% of total expenses
+                        category_percentage = abs(float(amount)) / total_expense * 100
+                        if category_percentage > 40:
+                            scores['diversity'] = max(10, 30 - (category_percentage - 40))
+                            break
+
+            # Calculate total score
+            total_score = round(sum(scores.values()))
+
+            # Generate factor descriptions
+            factors = {
+                'budget_adherence': ('Budget Management: ' + 
+                    ('Excellent' if scores['budget'] >= 35 else
+                     'Good' if scores['budget'] >= 25 else
+                     'Fair' if scores['budget'] >= 15 else 'Needs attention')),
+                
+                'savings': ('Savings Rate: ' + 
+                    ('Excellent' if scores['savings'] >= 25 else
+                     'Good' if scores['savings'] >= 15 else
+                     'Fair' if scores['savings'] >= 10 else 'Needs improvement')),
+                
+                'diversity': ('Expense Distribution: ' + 
+                    ('Well balanced' if scores['diversity'] >= 25 else
+                     'Moderately balanced' if scores['diversity'] >= 15 else
+                     'Could be more diverse'))
+            }
+
+            return jsonify({
+                'score': total_score,
+                'factors': factors,
+                'details': scores
+            })
+
+        except Exception as e:
+            print(f"Error calculating financial health: {str(e)}")
+            return jsonify({'error': str(e)}), 500
+
 init_routes(app)
