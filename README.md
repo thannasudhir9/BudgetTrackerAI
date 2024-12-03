@@ -1,294 +1,260 @@
-# Budget Tracker
-Last Updated: November 26, 2024
+# Budget Tracker Application
 
-A comprehensive web application for personal finance management with role-based access control, user management, and advanced tracking features. This application provides a secure and user-friendly interface to manage your financial life.
+### Last Updated:    03-Dec-2024 ###
+
+A comprehensive web-based budget tracking application built with Flask and modern web technologies. This application helps users manage their finances by tracking expenses, monitoring budgets, and visualizing spending patterns.
+
+## GOAL ##
+Is to Automate Bank Debit Card And Credit Card Statement and Analysis and Understand them faster and better way. 
+Plot Graphs, Pie Charts, Bar Charts, and apply all visulazations and make more interactive and easy to understand.
 
 ## Features
 
-### PDF Export Features (New)
-- Client-side PDF generation for instant downloads
-- Clean, professional report layout
-- Automatic date-stamped filenames (BudgetTracker_YYYYMMDD.pdf)
-- High-quality chart and graph rendering
-- Smart element hiding for PDF output
-- Responsive layout optimization
-- Custom print styling for better PDF appearance
+### 1. User Management
+- Secure user authentication and authorization
+- Role-based access control (Normal, Pro, Admin, Super Admin)
+- User profile management
+- Password reset functionality
 
-### User Management
-- Role-based access control (NORMAL, PRO, ADMIN, SUPER_ADMIN)
-- Secure user authentication with password strength validation
-- User account activation/deactivation
-- Admin dashboard for user management
-- Activity monitoring and logging
+### 2. Transaction Management
+- Add, edit, and delete financial transactions
+- Categorize transactions (Food, Transportation, Entertainment, etc.)
+- Attach notes and descriptions to transactions
+- Filter transactions by date range and category
 
-### Financial Management
-- Add income and expenses with descriptions
-- Categorize transactions (Food, Transportation, Entertainment, Bills, Shopping, etc.)
-- View complete transaction history in a clean, organized table
-- Real-time balance updates with color-coded amounts
-- Summary cards showing total income, expenses, and current balance
+### 3. Budget Management
+- Set and manage monthly, quarterly, and yearly budgets
+- Real-time budget utilization tracking
+- Dynamic gauge visualization for budget usage
+- Color-coded alerts for budget thresholds:
+  - Green: < 75% utilized
+  - Yellow: 75-90% utilized
+  - Red: > 90% utilized
 
-### Admin Features
-- Comprehensive admin dashboard
-- User statistics and analytics
-- Activity monitoring
-- Role management
-- System settings (Super Admin only)
-- User activity logs
+### 4. Dashboard & Analytics
+- Interactive dashboard with spending overview
+- Real-time budget utilization meters
+- Transaction history visualization
+- Category-wise spending breakdown
+- Trend analysis and spending patterns
 
-### Security Features
-- Strong password requirements
-- Role-based access restrictions
-- Active/inactive user status
-- Session management
-- Remember me functionality
-
-### UI/UX Features
-- Responsive design for desktop and mobile
-- Modern, clean interface with Bootstrap 5
-- Real-time form validation
-- Dynamic transaction tables
-- Role-specific navigation
-- Interactive charts and statistics
-- Professional PDF report generation
-- Optimized print layouts
-
-### File Import Features
-- **CSV Import**
-  - Upload transaction data from CSV files
-  - Automatic category creation
-  - Bulk transaction processing
-  - Sample CSV template available
-  - Error handling and validation
-
-- **PDF Import**
-  - Extract transactions from PDF statements
-  - Support for structured PDF formats
-  - Automatic text extraction
-  - Transaction parsing capabilities
-
-## Import File Requirements
-
-#### CSV Format
-```csv
-Date,Description,Amount,Type,Category
-2024-01-15,Grocery Shopping,-125.50,expense,Food
-2024-01-15,Salary,5000.00,income,Salary
-```
-
-- **Required Columns**:
-  - `Date`: YYYY-MM-DD format
-  - `Description`: Transaction description
-  - `Amount`: Positive for income, negative for expenses
-  - `Type`: 'income' or 'expense'
-  - `Category`: Must match existing categories or will be created
-
-#### PDF Format
-- Clear, readable text
-- Structured transaction data
-- One transaction per line (preferred)
-- Common bank statement formats supported
-
-## Import Process
-1. **Accessing Import Feature**
-   - Navigate to Dashboard
-   - Locate "Import Transactions" card
-   - Choose file type (CSV/PDF)
-
-2. **File Selection**
-   - Click "Choose File" button
-   - Select CSV or PDF file
-   - Maximum file size: 16MB
-
-3. **Processing**
-   - Automatic validation
-   - Category matching/creation
-   - Transaction creation
-   - Error handling
-
-4. **Results**
-   - Success/error count displayed
-   - Failed transactions logged
-   - Automatic file cleanup
-
-## Sample Files
-- Download sample CSV template
-- Use as reference for formatting
-- Test import functionality
-
-## Security Measures
-- File type validation
-- Size restrictions
-- Secure filename handling
-- Automatic file cleanup
-- User data isolation
-
-## Database Setup and Management
-
-### Default Users
-The application comes with four default user types:
-
-1. **Super Admin**
-   - Username: superadmin
-   - Email: superadmin@example.com
-   - Password: superadmin123
-   - Role: Super Administrator
-   - Full system access and management capabilities
-
-2. **Admin**
-   - Username: admin
-   - Email: admin@example.com
-   - Password: admin123
-   - Role: Administrator
-   - System management and user oversight
-
-3. **Pro User**
-   - Username: prouser
-   - Email: prouser@example.com
-   - Password: pro123
-   - Role: Pro User
-   - Access to advanced features
-
-4. **Normal User**
-   - Username: testuser
-   - Email: testuser@example.com
-   - Password: test123
-   - Role: Normal User
-   - Basic feature access
-
-### Default Categories
-Each user is initialized with the following categories:
-
-| Category       | Icon           | Color Code | Description           |
-|---------------|----------------|------------|----------------------|
-| Housing       | home           | #FF9999    | Light red           |
-| Transportation| car            | #99FF99    | Light green         |
-| Food          | utensils       | #9999FF    | Light blue          |
-| Utilities     | bolt           | #FFFF99    | Light yellow        |
-| Insurance     | shield         | #FF99FF    | Light magenta       |
-| Healthcare    | heart          | #99FFFF    | Light cyan          |
-| Savings       | piggy-bank     | #FFB366    | Light orange        |
-| Entertainment | film           | #B366FF    | Light purple        |
-| Shopping      | shopping-cart  | #66FFB3    | Light mint          |
-| Miscellaneous | ellipsis-h     | #808080    | Gray                |
-
-### Database Management Scripts
-
-The application includes two important database management scripts:
-
-1. **Database Setup Script** (`migrations/setup_database.py`)
-   - Creates all necessary database tables
-   - Initializes default users with appropriate roles
-   - Creates default categories for each user
-   - Sets up proper relationships and constraints
-
-   To run the setup script:
-   ```bash
-   python migrations/setup_database.py
-   ```
-
-2. **Database Cleanup Script** (`migrations/cleanup_tables.py`)
-   - Removes unnecessary tables while preserving essential ones
-   - Maintains data integrity
-   - Useful for database maintenance and cleanup
-
-   To run the cleanup script:
-   ```bash
-   python migrations/cleanup_tables.py
-   ```
-
-### Database Setup Process
-
-1. **Initial Setup**
-   ```bash
-   # Create and activate virtual environment
-   python -m venv venv
-   source venv/bin/activate  # On Unix/macOS
-   venv\Scripts\activate     # On Windows
-
-   # Install dependencies
-   pip install -r requirements.txt
-   ```
-
-2. **Database Initialization**
-   ```bash
-   # Clean up any existing tables (if needed)
-   python migrations/cleanup_tables.py
-
-   # Create tables and initialize data
-   python migrations/setup_database.py
-   ```
-
-3. **Verify Setup**
-   - Log in with any of the default user accounts
-   - Check that categories are properly created
-   - Verify user roles and permissions
-
-### Important Notes
-
-- Change default passwords immediately after first login
-- The cleanup script preserves essential tables: user, budget_transaction, category
-- Each user gets their own set of categories with unique icons and colors
-- All passwords are securely hashed using werkzeug's password hashing
-- The `is_active` flag is set to True by default for all users
+### 5. Feedback System
+- User feedback submission
+- Admin feedback management
+- Read status tracking for feedback
 
 ## Project Structure
 
 ```
 budget_tracker/
-├── app.py                 # Flask application and routes
-├── models.py             # Database models and role definitions
-├── requirements.txt      # Python dependencies
-├── README.md            # Project documentation
 ├── static/
 │   ├── css/
-│   │   ├── style.css    # Main styling
-│   │   └── admin.css    # Admin panel styling
-│   └── js/
-│       ├── main.js      # Main JavaScript
-│       └── dashboard.js # Dashboard charts and stats
+│   │   └── styles.css
+│   ├── js/
+│   │   ├── dashboard.js
+│   │   ├── transactions.js
+│   │   └── utilizationmetrics.js
+│   └── img/
 ├── templates/
-│   ├── admin/
-│   │   ├── base.html    # Admin base template
-│   │   └── dashboard.html # Admin dashboard
-│   ├── auth/
-│   │   ├── login.html   # Login page
-│   │   └── register.html # Registration page
-│   ├── base.html        # Main base template
-│   └── dashboard.html   # User dashboard
-└── venv/                # Python virtual environment
+│   ├── base.html
+│   ├── dashboard.html
+│   ├── login.html
+│   ├── profile.html
+│   └── transactions.html
+├── migrations/
+├── models.py
+├── routes.py
+├── extensions.py
+├── config.py
+└── app.py
 ```
 
-## Technical Details
+### Core Files
+
+#### `app.py`
+Main application entry point that initializes the Flask application.
+- `create_app()`: Factory function that creates and configures the Flask application
+  - Initializes extensions (SQLAlchemy, Login Manager)
+  - Registers blueprints
+  - Sets up error handlers
+  - Configures logging
+
+#### `config.py`
+Configuration settings for different environments.
+- `Config`: Base configuration class
+- `DevelopmentConfig`: Development environment settings
+- `ProductionConfig`: Production environment settings
+- `TestingConfig`: Testing environment settings
+
+#### `extensions.py`
+Flask extensions initialization.
+- `db`: SQLAlchemy database instance
+- `login_manager`: Flask-Login manager
+- `migrate`: Flask-Migrate for database migrations
+
+#### `models.py`
+Database models and business logic.
+
+**Classes:**
+- `User`
+  - User authentication and profile management
+  - Methods:
+    - `set_password()`: Hash and set user password
+    - `check_password()`: Verify password
+    - `update_last_login()`: Update login timestamp
+    - `can_access_feature()`: Check feature access permissions
+
+- `BudgetTransaction`
+  - Financial transaction management
+  - Fields:
+    - `amount`: Transaction amount
+    - `description`: Transaction description
+    - `category`: Transaction category
+    - `date`: Transaction date
+  - Methods:
+    - `to_dict()`: Convert transaction to dictionary
+    - `from_dict()`: Create transaction from dictionary
+
+- `UserBudget`
+  - Budget settings management
+  - Fields:
+    - `monthly_budget`: Monthly budget amount
+    - `quarterly_budget`: Quarterly budget amount
+    - `yearly_budget`: Yearly budget amount
+  - Methods:
+    - `__repr__`: String representation of budget
+
+- `Feedback`
+  - User feedback management
+  - Fields:
+    - `subject`: Feedback subject
+    - `message`: Feedback content
+    - `is_read`: Read status
+  - Methods:
+    - `to_dict()`: Convert feedback to dictionary
+
+#### `routes.py`
+Application routes and view functions.
+
+**Main Routes:**
+- Authentication Routes
+  - `/login`: User login
+  - `/logout`: User logout
+  - `/register`: New user registration
+  - `/reset-password`: Password reset
+
+- Dashboard Routes
+  - `/`: Main dashboard
+  - `/api/utilization-metrics/<year>/<month>`: Budget utilization data
+  - `/api/save-budget`: Update budget settings
+
+- Transaction Routes
+  - `/transactions`: Transaction list view
+  - `/api/transactions`: CRUD operations for transactions
+  - `/api/transaction-stats`: Transaction statistics
+
+- Profile Routes
+  - `/profile`: User profile management
+  - `/api/update-profile`: Update user profile
+  - `/api/change-password`: Change password
+
+- Feedback Routes
+  - `/feedback`: Submit feedback
+  - `/admin/feedback`: Admin feedback management
+
+### Frontend Files
+
+#### `static/js/dashboard.js`
+Dashboard functionality and visualizations.
+- `initializeDashboard()`: Set up dashboard components
+- `loadTransactionHistory()`: Load recent transactions
+- `updateCharts()`: Update dashboard charts
+- `setupEventListeners()`: Initialize dashboard interactions
+
+#### `static/js/utilizationmetrics.js`
+Budget utilization visualization.
+- `initializeGauges()`: Set up budget gauges
+- `updateUtilizationMeters()`: Update gauge values
+- `editBudget()`: Handle budget editing
+- `saveBudget()`: Save budget changes
+
+#### `static/js/transactions.js`
+Transaction management interface.
+- `initializeTransactionTable()`: Set up transaction list
+- `addTransaction()`: Handle new transactions
+- `editTransaction()`: Handle transaction editing
+- `deleteTransaction()`: Handle transaction deletion
+- `filterTransactions()`: Apply transaction filters
+
+#### `static/css/styles.css`
+Custom styling for the application.
+- Color schemes
+- Layout components
+- Responsive design rules
+- Custom animations
+
+### Template Files
+
+#### `templates/base.html`
+Base template with common layout elements.
+- Navigation bar
+- Sidebar
+- Footer
+- Common scripts and styles
+
+#### `templates/dashboard.html`
+Main dashboard template.
+- Budget utilization gauges
+- Transaction summary
+- Spending charts
+- Quick actions
+
+#### `templates/transactions.html`
+Transaction management interface.
+- Transaction list table
+- Add/Edit forms
+- Filter controls
+- Export options
+
+#### `templates/profile.html`
+User profile management.
+- Profile information
+- Password change
+- Settings
+- Subscription status
+
+#### `templates/login.html`
+Authentication templates.
+- Login form
+- Registration form
+- Password reset
+- Error messages
+
+### Database
+
+#### `migrations/`
+Database migration files.
+- Version control for database schema
+- Upgrade and downgrade scripts
+- Migration history
+
+## Technical Stack
 
 ### Backend
-- **Framework**: Flask 2.3.3
-- **Database**: SQLite with SQLAlchemy
+- **Framework**: Flask (Python)
+- **Database**: SQLite with SQLAlchemy ORM
 - **Authentication**: Flask-Login
-- **API Endpoints**:
-  - User Management:
-    - `POST /api/users`: Create new user
-    - `PUT /api/users/<id>`: Update user
-    - `POST /api/users/<id>/toggle-status`: Toggle user status
-  - Transactions:
-    - `GET /api/transactions`: Retrieve transactions
-    - `POST /api/transactions`: Add transaction
-  - Authentication:
-    - `POST /login`: User login
-    - `POST /register`: User registration
-    - `GET /logout`: User logout
+- **Migration**: Flask-Migrate (Alembic)
 
 ### Frontend
-- **UI Framework**: Bootstrap 5
-- **JavaScript**: Vanilla JS with Fetch API
-- **Styling**: Custom CSS with responsive design
-- **Features**:
-  - Real-time form validation
-  - Dynamic UI based on user role
-  - Interactive charts and statistics
-  - Automatic balance calculations
+- **Framework**: Bootstrap 5
+- **JavaScript Libraries**: 
+  - Chart.js for visualizations
+  - jQuery for DOM manipulation
+  - DataTables for table management
+- **CSS**: Custom styling with Bootstrap themes
 
-## Installation
+## Installation & Setup
 
 1. Clone the repository:
 ```bash
@@ -296,159 +262,32 @@ git clone <repository-url>
 cd budget_tracker
 ```
 
-2. Create a Python virtual environment:
+2. Create and activate virtual environment:
 ```bash
 python -m venv venv
+source venv/bin/activate  # Linux/Mac
+venv\Scripts\activate     # Windows
 ```
 
-3. Activate the virtual environment:
-```bash
-# On Windows
-venv\Scripts\activate
-
-# On macOS/Linux
-source venv/bin/activate
-```
-
-4. Install dependencies:
+3. Install dependencies:
 ```bash
 pip install -r requirements.txt
 ```
 
+4. Initialize the database:
+```bash
+flask db upgrade
+flask init-db
+```
+
 5. Run the application:
 ```bash
-python app.py
+flask run
 ```
 
-6. Open your browser and navigate to `http://localhost:5000`
+## Usage Guide
 
-## User Roles
-
-1. **NORMAL User**:
-   - Basic transaction management
-   - Personal dashboard access
-   - Profile management
-
-2. **PRO User**:
-   - Advanced reporting features
-   - Extended transaction history
-   - Additional categories
-   - Priority support
-
-3. **ADMIN User**:
-   - User management
-   - Transaction oversight
-   - Activity monitoring
-   - Report generation
-
-4. **SUPER_ADMIN**:
-   - System configuration
-   - Role management
-   - Full system access
-   - Security settings
-
-## Security Implementation
-
-1. **Password Requirements**:
-   - Minimum 8 characters
-   - At least one uppercase letter
-   - At least one lowercase letter
-   - At least one number
-   - At least one special character
-
-2. **Access Control**:
-   - Role-based route protection
-   - Session management
-   - Active status verification
-   - API endpoint protection
-
-3. **User Management**:
-   - Account activation/deactivation
-   - Role assignment restrictions
-   - Activity logging
-   - Login attempt tracking
-
-## Development
-
-The application follows a modular architecture:
-
-1. **User Management**:
-   - Role-based access control
-   - User authentication
-   - Profile management
-   - Activity tracking
-
-2. **Transaction Management**:
-   - CRUD operations
-   - Category management
-   - Balance calculations
-   - Transaction history
-
-3. **Admin Interface**:
-   - User oversight
-   - System monitoring
-   - Statistics generation
-   - Configuration management
-
-4. **Frontend Components**:
-   - Role-specific navigation
-   - Dynamic form validation
-   - Real-time updates
-   - Interactive charts
-
-## Technologies Used
-
-- **Backend**:
-  - Python 3.12
-  - Flask 2.3.3
-  - SQLAlchemy 3.0.5
-  - Flask-Login 0.6.2
-  - Werkzeug 2.3.7
-
-- **Frontend**:
-  - HTML5/CSS3
-  - JavaScript (ES6+)
-  - Bootstrap 5
-  - Bootstrap Icons
-  - Chart.js
-
-- **Database**:
-  - SQLite (Development)
-  - Migrations support
-
-## Contributing
-
-Contributions are welcome! Please feel free to submit pull requests.
-
-## Updates (Nov 26, 2024)
-
-### Major Changes
-1. Reorganized project structure for better modularity
-2. Implemented Flask factory pattern
-3. Separated user routes into dedicated module
-4. Enhanced role-based access control
-5. Added test users with sample transactions
-
-### Project Structure Update
-The project has been reorganized for better modularity:
-
-```
-budget_tracker/
-├── app.py              # Application factory and configuration
-├── extensions.py       # Flask extensions (SQLAlchemy, Login Manager)
-├── models.py           # Database models
-├── routes.py          # Main application routes
-├── user_routes.py     # User management routes
-├── migrations/        # Database migrations and setup
-│   └── setup_database.py  # Database initialization script
-├── static/           # Static files (CSS, JS, images)
-├── templates/        # HTML templates
-└── instance/         # Instance-specific files
-    └── budget_tracker.db  # SQLite database
-```
-
-### New Test Users
-The setup script now creates the following test users:
+### Default Login Credentials
 
 | Username  | Email                    | Password      | Role        |
 |-----------|--------------------------|---------------|-------------|
@@ -457,261 +296,265 @@ The setup script now creates the following test users:
 | user      | user@example.com         | user123       | Normal      |
 | pro_user  | pro@example.com          | pro123        | Pro         |
 
-### Updated Database Models
+#### Admin User
+- Username: admin
+- Email: admin@example.com
+- Password: admin123
 
-#### User Model Enhancements
-- Role-based access using UserRole enum
-- Last login tracking
-- Activity timestamps (created_at, updated_at)
-- Enhanced role validation methods
-- Secure password hashing
+#### Normal User
+- Username: user
+- Email: user@example.com
+- Password: user123
 
-#### Transaction Model Updates
-- Improved category system using TransactionCategory enum
-- Built-in type validation (income/expense)
-- Automatic timestamp management
-- Enhanced relationship with User model
+### Basic Operations
 
-### Transaction Categories
-Now using an enum-based system with predefined categories:
-- Food
-- Transportation
-- Entertainment
-- Shopping
-- Bills
-- Salary
-- Other Income
+1. **Adding Transactions**
+   - Navigate to Transactions page
+   - Click "Add Transaction"
+   - Fill in amount, category, and description
+   - Submit the form
 
-Each category includes:
-- Name
-- Bootstrap Icon
-- Color scheme for UI
+2. **Setting Budgets**
+   - Go to Dashboard
+   - Click "Edit Budget" next to respective period
+   - Enter new budget amount
+   - Save changes
 
-### API Endpoints Update
+3. **Viewing Analytics**
+   - Access Dashboard for overview
+   - Use date filters to analyze specific periods
+   - Check budget utilization gauges
+   - Review category-wise spending charts
 
-#### User Management
-- GET `/users` - List all users (Admin only)
-- GET `/api/users/<id>` - Get user details
-- PUT `/api/users/<id>` - Update user
-- POST `/api/users` - Create new user
-- POST `/api/users/<id>/toggle-status` - Toggle user status
+## API Documentation
 
-#### Transactions
-- GET `/` - Dashboard with transaction overview
-- POST `/transactions` - Create new transaction
-- GET `/transactions` - List user's transactions
-- PUT `/transactions/<id>` - Update transaction
-- DELETE `/transactions/<id>` - Delete transaction
+### Authentication Endpoints
+- `POST /api/login`: User login
+- `POST /api/register`: New user registration
+- `POST /api/reset-password`: Password reset
 
-### Role-Based Access Updates
+### Transaction Endpoints
+- `GET /api/transactions`: List transactions
+- `POST /api/transactions`: Create transaction
+- `PUT /api/transactions/<id>`: Update transaction
+- `DELETE /api/transactions/<id>`: Delete transaction
 
-1. **Normal User**
-   - Basic transaction management
-   - Personal dashboard
-   - Limited features
-
-2. **Pro User**
-   - Advanced reporting
-   - Extended transaction history
-   - Additional features
-
-3. **Admin**
-   - User management
-   - System monitoring
-   - Access to all features
-
-4. **Super Admin**
-   - Full system control
-   - User role management
-   - System configuration
-
-### Quick Start with New Features
-
-1. Initialize the database with test data:
-```bash
-python migrations/setup_database.py
-```
-
-2. Run the application:
-```bash
-python app.py
-```
-
-3. Access the application:
-   - URL: http://localhost:5000
-   - Login with any test user credentials
-   - Explore role-specific features
-
-### Development Notes
-
-#### Adding New Features
-1. Create new routes in appropriate route files
-2. Update models if needed
-3. Add new templates
-4. Update role permissions if required
-
-#### Database Updates
-1. Modify models in `models.py`
-2. Update `setup_database.py` if needed
-3. Run setup script to recreate database
-
-### Security Enhancements
-- Improved password hashing using Werkzeug
-- Enhanced role-based access control
-- Better session management
-- Added CSRF protection
-- Improved input validation
-
-
-1. Enhanced PDF Export Functionality
-   - Implemented client-side PDF generation using html2pdf.js
-   - Added smart element hiding for cleaner PDF output
-   - Improved chart rendering in PDF exports
-   - Optimized layout for professional appearance
-   - Added dynamic date-stamped filenames
-
-2. Dashboard Improvements
-   - Updated transaction view endpoints
-   - Added period-specific transaction filtering
-   - Enhanced mobile responsiveness
-   - Improved chart display
-   - Added "View All" functionality for each time period
-
-3. Technical Enhancements
-   - Removed server-side PDF generation dependencies
-   - Optimized client-side performance
-   - Enhanced print media queries
-   - Improved cross-browser compatibility
-
-4. UI/UX Improvements
-   - Better button visibility control
-   - Enhanced layout consistency
-   - Improved responsive design
-   - Cleaner PDF output formatting
-   
-For more details on specific features or development guidelines, refer to the documentation above.
-
-
-# Budget Tracker Application
-*Last Updated: November 29, 2024*
-
-## Overview
-A comprehensive web-based budget tracking application that helps users manage their personal finances through intuitive visualizations and detailed transaction tracking.
-
-## Features
-- **Dashboard Overview**
-  - Monthly income, expenses, and net income summary cards
-  - Category-wise distribution of income and expenses
-  - Detailed transaction history
-
-- **Financial Visualization**
-  - Separate pie charts for income and expense categories
-  - Monthly trend analysis
-  - Weekly transaction breakdown
-  - Yearly financial overview
-
-- **Transaction Management**
-  - Add, edit, and categorize transactions
-  - Multiple currency support (USD, EUR, INR)
-  - Category-based organization
-  - Date-based filtering
-
-- **Data Analysis**
-  - Category-wise statistics and percentages
-  - Time-based trend analysis (Daily, Weekly, Monthly, Yearly)
-  - Dynamic data updates
-
-## Technical Stack
-- **Backend**: Flask (Python)
-- **Frontend**: JavaScript, HTML5, CSS3
-- **Database**: SQLAlchemy
-- **Visualization**: Chart.js
-- **Styling**: Bootstrap
-- **PDF Export**: html2pdf.js
-
-## Key Components
-1. **Dashboard Interface**
-   - Real-time financial overview
-   - Interactive charts and graphs
-   - Responsive design for all devices
-
-2. **Transaction Management**
-   - Multi-currency support
-   - Category management
-   - Date-based organization
-
-3. **Data Visualization**
-   - Income/Expense pie charts
-   - Time-series analysis
-   - Category distribution
-
-4. **Export Functionality**
-   - PDF report generation
-   - Data backup options
-
-## Currency Support
-- USD (US Dollar)
-- EUR (Euro)
-- INR (Indian Rupee)
-- Dynamic currency conversion
-- Persistent currency preference
+### Budget Endpoints
+- `GET /api/utilization-metrics/<year>/<month>`: Get budget metrics
+- `POST /api/save-budget`: Update budget settings
 
 ## Security Features
-- User authentication
-- Secure API endpoints
-- Data validation
+
+- Password hashing using Werkzeug
+- CSRF protection
 - Session management
-
-## Performance Optimizations
-- Efficient data loading
-- Chart instance management
-- Responsive data updates
-- Browser storage utilization
-
-## Browser Compatibility
-- Chrome (Recommended)
-- Firefox
-- Safari
-- Edge
-
-## Future Enhancements
-1. Advanced filtering options
-2. Machine learning for category predictions
-3. Budget goal setting
-4. Mobile application
-5. More currency options
-6. Enhanced reporting features
-
-## Dependencies
-- Flask
-- SQLAlchemy
-- Chart.js
-- Bootstrap
-- html2pdf.js
-
-## Installation
-1. Clone the repository
-2. Install Python dependencies: `pip install -r requirements.txt`
-3. Set up the database
-4. Configure environment variables
-5. Run the Flask application
-
-## Usage
-1. Register/Login to your account
-2. Add transactions
-3. View financial overview
-4. Generate reports
-5. Manage categories
-6. Export data
+- Role-based access control
+- Input validation and sanitization
+- Error logging and monitoring
 
 ## Contributing
-Contributions are welcome! Please feel free to submit a Pull Request.
+
+1. Fork the repository
+2. Create a feature branch
+3. Commit your changes
+4. Push to the branch
+5. Create a Pull Request
 
 ## License
+
 This project is licensed under the MIT License - see the LICENSE file for details.
 
 ## Support
-For support, please open an issue in the repository or contact the development team.
+
+For support and queries, please:
+1. Check the documentation
+2. Submit an issue on GitHub
+3. Contact the development team
 
 ---
-*Note: This README is regularly updated to reflect the latest changes and improvements to the Budget Tracker application.*
+
+**Note**: Keep your credentials secure and never share them. Change default passwords immediately after first login.
+
+## Future Enhancements
+
+### 1. Advanced Analytics & AI Features
+- **Smart Budget Recommendations**
+  - AI-powered budget suggestions based on spending patterns
+  - Machine learning models for expense prediction
+  - Anomaly detection for unusual spending
+
+- **Personalized Insights**
+  - Custom spending reports and trends
+  - Goal-based savings recommendations
+  - Financial health score calculation
+
+- **Natural Language Processing**
+  - Voice commands for transaction entry
+  - Chatbot for financial advice
+  - Receipt scanning and automatic categorization
+
+### 2. Enhanced User Experience
+- **Mobile Application**
+  - Native iOS and Android apps
+  - Offline transaction recording
+  - Push notifications for budget alerts
+  - Biometric authentication
+
+- **Social Features**
+  - Anonymous spending comparisons with peers
+  - Group expense tracking
+  - Split bill calculator
+  - Financial goal sharing
+
+- **Customization Options**
+  - Custom dashboard layouts
+  - Personalized category creation
+  - Multiple currency support
+  - Custom reporting periods
+
+### 3. Financial Planning Tools
+- **Investment Tracking**
+  - Stock portfolio management
+  - Cryptocurrency integration
+  - Investment performance analytics
+  - Automated portfolio rebalancing
+
+- **Debt Management**
+  - Loan tracking and optimization
+  - Debt payoff strategies
+  - Interest calculation tools
+  - Payment reminders
+
+- **Tax Planning**
+  - Tax category tagging
+  - Tax deduction tracking
+  - Year-end tax report generation
+  - Receipt storage for tax purposes
+
+### 4. Integration Capabilities
+- **Banking Integration**
+  - Direct bank feed connections
+  - Automatic transaction import
+  - Real-time balance updates
+  - Multi-account aggregation
+
+- **External Services**
+  - Export to accounting software
+  - Integration with payment apps
+  - Cloud storage sync
+  - Calendar integration for bills
+
+### 5. Advanced Security
+- **Enhanced Authentication**
+  - Multi-factor authentication
+  - Hardware key support
+  - IP-based access control
+  - Session management
+
+- **Data Protection**
+  - End-to-end encryption
+  - Automated backups
+  - Data export/import tools
+  - GDPR compliance tools
+
+## Development Thought Process
+
+### 1. User-Centric Design Philosophy
+- **Problem Statement**
+  - Users need more than just transaction tracking
+  - Financial decisions require context and insights
+  - Budget management should be proactive, not reactive
+
+- **Solution Approach**
+  - Focus on predictive analytics
+  - Provide actionable insights
+  - Create intuitive visualizations
+  - Enable personalized goal setting
+
+### 2. Technical Architecture Decisions
+- **Scalability Considerations**
+  - Microservices architecture for future scaling
+  - Caching strategy for performance
+  - Database sharding for large datasets
+  - API versioning for compatibility
+
+- **Technology Choices**
+  - Flask for rapid development and flexibility
+  - SQLAlchemy for robust data modeling
+  - Chart.js for responsive visualizations
+  - Bootstrap for consistent UI/UX
+
+### 3. Security First Approach
+- **Data Protection**
+  - Regular security audits
+  - Encrypted data storage
+  - Secure API endpoints
+  - Privacy by design
+
+- **User Trust**
+  - Transparent data usage
+  - Clear privacy policies
+  - Regular security updates
+  - User data control
+
+### 4. Performance Optimization
+- **Frontend Optimization**
+  - Code splitting
+  - Lazy loading
+  - Asset optimization
+  - Cache management
+
+- **Backend Efficiency**
+  - Query optimization
+  - Background task processing
+  - Rate limiting
+  - Resource pooling
+
+### 5. Maintenance Strategy
+- **Code Quality**
+  - Comprehensive testing
+  - Documentation standards
+  - Code review process
+  - Performance monitoring
+
+- **Update Process**
+  - Feature flagging
+  - Canary deployments
+  - Automated testing
+  - Rollback procedures
+
+## Implementation Priorities
+
+### Phase 1: Core Enhancement
+1. Mobile responsiveness optimization
+2. Advanced budget tracking features
+3. Improved data visualization
+4. Basic AI insights
+
+### Phase 2: User Experience
+1. Custom categories and tags
+2. Advanced filtering options
+3. Bulk transaction operations
+4. Enhanced reporting
+
+### Phase 3: Advanced Features
+1. Banking integration
+2. Investment tracking
+3. Tax management
+4. Social features
+
+### Phase 4: AI and Analytics
+1. Predictive budgeting
+2. Spending pattern analysis
+3. Automated categorization
+4. Financial advice engine
+
+## Success Metrics
+- User engagement rates
+- Feature adoption metrics
+- Performance benchmarks
+- Security compliance
+- User satisfaction scores
+- Technical debt measures
+- API response times
+- Error rates and resolution times
